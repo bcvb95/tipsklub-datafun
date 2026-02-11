@@ -426,7 +426,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem ramte den bedste enkeluge i hele 2025?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_week_player} trykkede {best_week_row["Profit"]:+,.0f} kr '
+        "reveal": f'{best_week_player} hamrede {best_week_row["Profit"]:+,.0f} kr hjem '
                   f'på en enkelt uge! (uge {best_week_row["WeekKey"]})',
         "chartId": "bigweeks",
         "ranking": best_weeks_ranked,
@@ -923,7 +923,7 @@ body {{
     <div class="landing-title">Tipsklub 2025</div>
     <div class="landing-sub">Interaktiv Quiz</div>
     <div class="landing-sub" style="margin-bottom:8px;">{date_from} — {date_to} &middot; {n_players} spillere &middot; {total_weeks} uger &middot; {total_bets} bets</div>
-    <button class="btn btn-host" onclick="startHost()">Vaert (Host)</button>
+    <button class="btn btn-host" onclick="startHost()">Vært (Host)</button>
     <button class="btn btn-join" onclick="showJoin()">Deltag (Join)</button>
 </div>
 
@@ -983,7 +983,7 @@ body {{
         </div>
         <div class="qs-grid" id="quickStatsReveal" style="display:none;"></div>
         <div class="mini-sb" id="miniScoreboard"></div>
-        <button class="btn btn-next" id="btnNext" onclick="hostNextQuestion()" style="margin-top:16px;">Naeste Spørgsmål</button>
+        <button class="btn btn-next" id="btnNext" onclick="hostNextQuestion()" style="margin-top:16px;">Næste Spørgsmål</button>
     </div>
 </div>
 
@@ -1004,7 +1004,7 @@ body {{
     <div class="feedback-detail" id="playerFeedbackDetail"></div>
     <div class="feedback-earned" id="playerEarned"></div>
     <div class="score-display" id="playerScore"></div>
-    <div class="waiting" style="margin-top:24px;">Venter på naeste spørgsmål<span class="dot">...</span></div>
+    <div class="waiting" style="margin-top:24px;">Venter på næste spørgsmål<span class="dot">...</span></div>
 </div>
 
 <!-- Screen: Halftime (Host) -->
@@ -1547,7 +1547,7 @@ function showRevealScreen(q) {{
     if (currentQ >= QUESTIONS.length - 1) {{
         btnNext.textContent = 'Vis Scoreboard';
     }} else {{
-        btnNext.textContent = 'Naeste Spørgsmål';
+        btnNext.textContent = 'Næste Spørgsmål';
     }}
 
     showScreen('screenHostReveal');
