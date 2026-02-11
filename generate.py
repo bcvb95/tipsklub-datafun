@@ -426,8 +426,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem ramte den bedste enkeluge i hele 2025?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_week_player} med {best_week_row["Profit"]:+,.0f} kr '
-                  f'(uge {best_week_row["WeekKey"]})',
+        "reveal": f'{best_week_player} trykkede {best_week_row["Profit"]:+,.0f} kr '
+                  f'på en enkelt uge! (uge {best_week_row["WeekKey"]})',
         "chartId": "bigweeks",
         "ranking": best_weeks_ranked,
     })
@@ -447,7 +447,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvilken måned var bedst for klubben?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_month_name} med {month_totals.max():+,.0f} kr profit',
+        "reveal": f'{best_month_name} var guld! {month_totals.max():+,.0f} kr profit for klubben',
         "chartId": "monthly",
         "ranking": month_ranking,
     })
@@ -460,7 +460,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem er den største Odds-Junkie? (højeste gns. odds)",
         "options": opts, "correct": ci,
-        "reveal": f'{odds_best["Spiller"]} med gns. odds {odds_best["Avg Odds"]:.2f}',
+        "reveal": f'{odds_best["Spiller"]} lever farligt — gns. odds {odds_best["Avg Odds"]:.2f}!',
         "chartId": "odds",
         "ranking": player_ranking("Avg Odds", ".2f", ""),
     })
@@ -480,7 +480,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvilken ugedag blev der spillet mest på?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_wd_name} med {int(wd_counts.max())} bets',
+        "reveal": f'{best_wd_name} er den hellige spilledag — {int(wd_counts.max())} bets!',
         "chartId": "weekdayTotal",
         "ranking": wd_ranking,
     })
@@ -493,7 +493,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem lavede flest individuelle bets?",
         "options": opts, "correct": ci,
-        "reveal": f'{bets_best["Spiller"]} med {bets_best["Bets"]:.0f} bets',
+        "reveal": f'{bets_best["Spiller"]} fyrede {bets_best["Bets"]:.0f} bets af — ingen holder igen!',
         "chartId": "betsPerPlayer",
         "ranking": player_ranking("Bets", ",.0f", " bets"),
     })
@@ -518,8 +518,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvilken af vores top-ligaer gav mest profit?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_league} med {most_profitable["Profit"]:+,.0f} kr '
-                  f'på {most_profitable["Bets"]:.0f} bets',
+        "reveal": f'{best_league} leverede {most_profitable["Profit"]:+,.0f} kr '
+                  f'profit på bare {most_profitable["Bets"]:.0f} bets!',
         "chartId": "leagues",
         "ranking": league_ranking,
     })
@@ -536,8 +536,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": f"Hvor mange af {total_weeks} uger endte i plus?",
         "options": opts, "correct": ci,
-        "reveal": f'{profitable_weeks} af {total_weeks} uger var profitable '
-                  f'({profitable_weeks / total_weeks * 100:.0f}%)',
+        "reveal": f'{profitable_weeks} af {total_weeks} — '
+                  f'{profitable_weeks / total_weeks * 100:.0f}% af ugerne endte i plus!',
         "chartId": "cumulative",
         "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
@@ -557,8 +557,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem slap billigst i sin værste uge?",
         "options": opts, "correct": ci,
-        "reveal": f'{mildest_player} — værste uge var kun '
-                  f'{worst_per_player[mildest_player]:+,.0f} kr',
+        "reveal": f'{mildest_player} klarede skærene — værste uge var kun '
+                  f'{worst_per_player[mildest_player]:+,.0f} kr!',
         "chartId": "bigweeks",
         "ranking": worst_weeks_ranked,
     })
@@ -577,7 +577,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem spillede flest højodds-bets? (odds 3+)",
         "options": opts, "correct": ci,
-        "reveal": f'{ho_best_player} med {high_odds_counts[ho_best_player]} bets på odds 3+',
+        "reveal": f'{ho_best_player} elsker at gamble — hele {high_odds_counts[ho_best_player]} bets på odds 3+!',
         "chartId": "odds",
         "ranking": ho_ranking,
     })
@@ -590,7 +590,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem endte i bunden med størst tab?",
         "options": opts, "correct": ci,
-        "reveal": f'{worst["Spiller"]} med {worst["Total Profit"]:+,.0f} kr',
+        "reveal": f'{worst["Spiller"]} tog den for holdet — {worst["Total Profit"]:+,.0f} kr!',
         "chartId": "leaderboard",
         "ranking": player_ranking("Total Profit", ascending=True),
     })
@@ -604,8 +604,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem vandt flest af sine uger (højeste win rate)?",
         "options": opts, "correct": ci,
-        "reveal": f'{wr_best["Spiller"]} med {wr_best["Win Rate"]:.0f}% '
-                  f'({wr_best["Winning Weeks"]:.0f} af {wr_best["Weeks"]:.0f} uger)',
+        "reveal": f'{wr_best["Spiller"]} vandt {wr_best["Win Rate"]:.0f}% af sine uger '
+                  f'({wr_best["Winning Weeks"]:.0f} af {wr_best["Weeks"]:.0f}) — maskine!',
         "chartId": "winrate",
         "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
@@ -633,8 +633,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem endte oftest ugen på en vindende bet?",
         "options": opts, "correct": ci,
-        "reveal": f'{closer_best} — {closer_stats[closer_best][0]} af '
-                  f'{closer_stats[closer_best][1]} uger sluttede med en vinder',
+        "reveal": f'{closer_best} er Mr. Clutch — {closer_stats[closer_best][0]} af '
+                  f'{closer_stats[closer_best][1]} uger sluttede med en vinder!',
         "chartId": "bigweeks",
         "ranking": closer_ranking,
     })
@@ -660,7 +660,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem ramte den højeste vindende odds?",
         "options": opts, "correct": ci,
-        "reveal": f'{ls_player} med odds {ls_odds:.2f} — +{ls_profit:,.0f} kr profit!',
+        "reveal": f'{ls_player} slog til på odds {ls_odds:.2f} og scorede +{ls_profit:,.0f} kr!',
         "chartId": "odds",
         "ranking": ls_ranking,
     })
@@ -669,13 +669,13 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     club_profit = stats["Total Profit"].sum()
     correct_str = f'{club_profit:+,.0f} kr'
     wrong_amounts = []
-    for offset in [800, -600, 1500]:
+    for offset in [350, -400, -150]:
         wrong_amounts.append(f'{club_profit + offset:+,.0f} kr')
     opts, ci = make_options(correct_str, wrong_amounts)
     questions.append({
         "question": "Hvad var klubbens samlede profit i 2025?",
         "options": opts, "correct": ci,
-        "reveal": f'Klubben endte på {club_profit:+,.0f} kr samlet',
+        "reveal": f'Klubben landede på {club_profit:+,.0f} kr — ikke dårligt!',
         "chartId": "cumulative",
         "ranking": player_ranking("Total Profit", ascending=True),
     })
@@ -688,7 +688,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     questions.append({
         "question": "Hvem blev årets Tipsklub-mester med mest profit?",
         "options": opts, "correct": ci,
-        "reveal": f'{best["Spiller"]} med {best["Total Profit"]:+,.0f} kr',
+        "reveal": f'{best["Spiller"]} er mesteren med {best["Total Profit"]:+,.0f} kr!',
         "chartId": "leaderboard",
         "ranking": player_ranking("Total Profit"),
     })
@@ -1005,6 +1005,22 @@ body {{
     <div class="feedback-earned" id="playerEarned"></div>
     <div class="score-display" id="playerScore"></div>
     <div class="waiting" style="margin-top:24px;">Venter på naeste spørgsmål<span class="dot">...</span></div>
+</div>
+
+<!-- Screen: Halftime (Host) -->
+<div id="screenHalftime" class="screen">
+    <div class="landing-title" style="margin-bottom:4px;">Halvleg!</div>
+    <div class="landing-sub">Halvvejs — her er stillingen</div>
+    <div class="scoreboard" id="halftimeScoreboard"></div>
+    <button class="btn btn-host" id="btnHalftimeContinue" onclick="halftimeContinue()" style="margin-top:24px;">Videre til 2. halvleg</button>
+</div>
+
+<!-- Screen: Halftime (Player) -->
+<div id="screenPlayerHalftime" class="screen">
+    <div class="landing-title" style="margin-bottom:4px;">Halvleg!</div>
+    <div class="landing-sub">Halvvejs — her er stillingen</div>
+    <div class="scoreboard" id="playerHalftimeScoreboard"></div>
+    <div class="waiting" style="margin-top:24px;">Venter på 2. halvleg<span class="dot">...</span></div>
 </div>
 
 <!-- Screen: Final Scoreboard -->
@@ -1660,13 +1676,45 @@ function renderChart(canvas, chartId) {{
     return null;
 }}
 
+const HALFTIME_AFTER = Math.floor(QUESTIONS.length / 2); // show halftime after this question
+let halftimeShown = false;
+
 function hostNextQuestion() {{
     currentQ++;
     if (currentQ >= QUESTIONS.length) {{
         showFinalScoreboard();
+    }} else if (currentQ === HALFTIME_AFTER && !halftimeShown) {{
+        halftimeShown = true;
+        showHalftime();
     }} else {{
         hostSendQuestion();
     }}
+}}
+
+function showHalftime() {{
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    const rankIcons = ['gold', 'silver', 'bronze'];
+    let html = '';
+    sorted.forEach((p, i) => {{
+        const rankClass = i < 3 ? rankIcons[i] : '';
+        const rank = i < 3 ? ['1','2','3'][i] : (i + 1);
+        const color = PLAYER_COLORS[p.name] || '#2563eb';
+        html += `<div class="sb-row" style="animation-delay:${{i * 0.1}}s">
+            <div class="sb-rank ${{rankClass}}">${{rank}}</div>
+            <div class="sb-name" style="color:${{color}}">${{p.name}}</div>
+            <div><span class="sb-score">${{p.score}} pts</span><span class="sb-correct">${{p.correct_count}}/${{HALFTIME_AFTER}}</span></div>
+        </div>`;
+    }});
+    document.getElementById('halftimeScoreboard').innerHTML = html;
+    showScreen('screenHalftime');
+
+    // Send halftime to players
+    const scoresArr = sorted.map(p => ({{ name: p.name, score: p.score, correct: p.correct_count }}));
+    connections.forEach(c => c.send({{ type: 'halftime', scores: scoresArr }}));
+}}
+
+function halftimeContinue() {{
+    hostSendQuestion();
 }}
 
 function showFinalScoreboard() {{
@@ -1888,6 +1936,24 @@ function handlePlayerMessage(data, myName) {{
         document.getElementById('playerScore').textContent = 'Total: ' + myScore + ' point';
 
         showScreen('screenPlayerFeedback');
+    }}
+    if (data.type === 'halftime') {{
+        const sorted = data.scores;
+        const rankIcons = ['gold', 'silver', 'bronze'];
+        let html = '';
+        sorted.forEach((p, i) => {{
+            const rankClass = i < 3 ? rankIcons[i] : '';
+            const rank = i < 3 ? ['1','2','3'][i] : (i + 1);
+            const color = PLAYER_COLORS[p.name] || '#2563eb';
+            const highlight = p.name === myName ? 'border:2px solid #2563eb;' : '';
+            html += `<div class="sb-row" style="${{highlight}}animation-delay:${{i * 0.1}}s">
+                <div class="sb-rank ${{rankClass}}">${{rank}}</div>
+                <div class="sb-name" style="color:${{color}}">${{p.name}}</div>
+                <div><span class="sb-score">${{p.score}} pts</span><span class="sb-correct">${{p.correct}}/${{Math.floor(QUESTIONS.length / 2)}}</span></div>
+            </div>`;
+        }});
+        document.getElementById('playerHalftimeScoreboard').innerHTML = html;
+        showScreen('screenPlayerHalftime');
     }}
     if (data.type === 'scoreboard') {{
         const sorted = data.scores;
