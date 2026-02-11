@@ -303,6 +303,46 @@ def chart8_best_worst_data(weekly: pd.DataFrame) -> str:
     })
 
 
+def chart_best_weeks_only(weekly: pd.DataFrame) -> str:
+    """Top 5 best weeks only — horizontal bar (no worst weeks)."""
+    top = weekly.nlargest(5, "Profit").sort_values("Profit", ascending=True)
+    return json.dumps({
+        "labels": [f"{r['Spiller']} ({r['FirstDate'].strftime('%d/%m')})"
+                   for _, r in top.iterrows()],
+        "data": [round(r["Profit"], 0) for _, r in top.iterrows()],
+        "colors": [PLAYER_COLORS[r["Spiller"]] for _, r in top.iterrows()],
+    })
+
+
+def chart_worst_weeks_only(weekly: pd.DataFrame) -> str:
+    """Bottom 5 worst weeks only — horizontal bar (no best weeks)."""
+    bottom = weekly.nsmallest(5, "Profit").sort_values("Profit", ascending=True)
+    return json.dumps({
+        "labels": [f"{r['Spiller']} ({r['FirstDate'].strftime('%d/%m')})"
+                   for _, r in bottom.iterrows()],
+        "data": [round(r["Profit"], 0) for _, r in bottom.iterrows()],
+        "colors": [PLAYER_COLORS[r["Spiller"]] for _, r in bottom.iterrows()],
+    })
+
+
+def chart_cumulative_club(weekly: pd.DataFrame) -> str:
+    """Club total cumulative P/L — single line (no per-player breakdown)."""
+    club = weekly.groupby("FirstDate")["Profit"].sum().sort_index()
+    cum = club.cumsum()
+    data = [{"x": d.strftime("%Y-%m-%d"), "y": round(v, 0)} for d, v in zip(cum.index, cum)]
+    return json.dumps([{
+        "label": "Klubben",
+        "data": data,
+        "borderColor": "#2563eb",
+        "backgroundColor": "#2563eb",
+        "borderWidth": 3,
+        "pointRadius": 4,
+        "pointHoverRadius": 6,
+        "tension": 0.15,
+        "fill": False,
+    }])
+
+
 def chart_weekday_totals(df_bets: pd.DataFrame) -> str:
     """Total bets per weekday — simple bar chart."""
     df = df_bets.copy()
@@ -441,7 +481,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'{best_week_player} hamrede {best_week_row["Profit"]:+,.0f} kr hjem '
                   f'på en enkelt uge! (uge {best_week_row["WeekKey"]})',
-        "chartId": "bigweeks",
+        "chartId": "bestWeeks",
         "ranking": best_weeks_ranked,
     })
 
@@ -551,7 +591,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'{profitable_weeks} af {total_weeks} — '
                   f'{profitable_weeks / total_weeks * 100:.0f}% af ugerne endte i plus!',
-        "chartId": "cumulative",
+        "chartId": "cumulativeClub",
         "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
 
@@ -572,7 +612,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'{mildest_player} klarede skærene — værste uge var kun '
                   f'{worst_per_player[mildest_player]:+,.0f} kr!',
-        "chartId": "bigweeks",
+        "chartId": "worstWeeks",
         "ranking": worst_weeks_ranked,
     })
 
@@ -600,12 +640,16 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     opts, ci = make_options(
         worst["Spiller"],
         [p for p in PLAYER_ORDER if p != worst["Spiller"]])
+    # Only show players who lost money — avoids leaking who is the most profitable
+    losers = stats[stats["Total Profit"] < 0].sort_values("Total Profit", ascending=True)
+    loss_ranking = [{"name": r["Spiller"], "value": f'{r["Total Profit"]:+,.0f} kr'}
+                    for _, r in losers.iterrows()]
     questions.append({
         "question": "Hvem endte i bunden med størst tab?",
         "options": opts, "correct": ci,
         "reveal": f'{worst["Spiller"]} tog den for holdet — {worst["Total Profit"]:+,.0f} kr!',
-        "chartId": "cumulative",
-        "ranking": player_ranking("Total Profit", ascending=True),
+        "chartId": "cumulativeClub",
+        "ranking": loss_ranking,
     })
 
     # ── Q10: WIN RATE ──
@@ -685,12 +729,17 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     for offset in [350, -400, -150]:
         wrong_amounts.append(f'{club_profit + offset:+,.0f} kr')
     opts, ci = make_options(correct_str, wrong_amounts)
+    # Show monthly breakdown — avoids leaking per-player profit before Q15
+    month_totals_q14 = weekly.groupby("Month")["Profit"].sum()
+    monthly_ranking = [
+        {"name": DANISH_MONTHS[int(m) - 1], "value": f'{v:+,.0f} kr'}
+        for m, v in month_totals_q14.sort_values(ascending=False).items()]
     questions.append({
         "question": "Hvad var klubbens samlede profit i 2025?",
         "options": opts, "correct": ci,
         "reveal": f'Klubben landede på {club_profit:+,.0f} kr — ikke dårligt!',
-        "chartId": "cumulative",
-        "ranking": player_ranking("Total Profit", ascending=True),
+        "chartId": "cumulativeClub",
+        "ranking": monthly_ranking,
     })
 
     # ── Q15: THE CHAMPION — GRAND FINALE ──
@@ -1055,6 +1104,9 @@ const CHART_DATA = {{
     leagues: {chart_data['leagues']},
     odds: {chart_data['odds']},
     bigweeks: {chart_data['bigweeks']},
+    bestWeeks: {chart_data['bestWeeks']},
+    worstWeeks: {chart_data['worstWeeks']},
+    cumulativeClub: {chart_data['cumulativeClub']},
     weekdayTotal: {chart_data['weekdayTotal']},
     betsPerPlayer: {chart_data['betsPerPlayer']},
     highOddsPerPlayer: {chart_data['highOddsPerPlayer']},
@@ -1642,6 +1694,42 @@ function renderChart(canvas, chartId) {{
             options: {{ indexAxis:'y', responsive:true,
                 plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' }} }} }},
                 scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'bestWeeks') {{
+        const d = CHART_DATA.bestWeeks;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ indexAxis:'y', responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' }} }} }},
+                scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'worstWeeks') {{
+        const d = CHART_DATA.worstWeeks;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ indexAxis:'y', responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' }} }} }},
+                scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'cumulativeClub') {{
+        const datasets = CHART_DATA.cumulativeClub;
+        return new Chart(ctx, {{
+            type: 'line',
+            data: {{ datasets }},
+            options: {{ responsive:true,
+                scales: {{
+                    x: {{ type:'time', time:{{ unit:'month', displayFormats:{{ month:'MMM' }} }}, grid:{{ color:'#f1f5f9' }} }},
+                    y: {{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}
+                }},
+                plugins:{{ tooltip:{{ callbacks:{{ label: c => c.parsed.y.toLocaleString('da-DK')+' kr' }} }} }}
             }}
         }});
     }}
@@ -2459,6 +2547,9 @@ def main():
         "odds": chart6_odds_data(df_bets),
         "weekday": chart7_weekday_data(df_bets),
         "bigweeks": chart8_best_worst_data(weekly),
+        "bestWeeks": chart_best_weeks_only(weekly),
+        "worstWeeks": chart_worst_weeks_only(weekly),
+        "cumulativeClub": chart_cumulative_club(weekly),
         "weekdayTotal": chart_weekday_totals(df_bets),
         "betsPerPlayer": chart_bets_per_player(stats),
         "highOddsPerPlayer": chart_high_odds_per_player(df_bets),
