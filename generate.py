@@ -783,15 +783,15 @@ function startHost() {{
     document.getElementById('roomCodeDisplay').textContent = roomCode;
     const peerId = 'tipsklub-' + roomCode.toLowerCase();
 
-    peer = new Peer(peerId, {{ debug: 0 }});
-    peer.on('open', () => {{
-        console.log('Host peer open:', peerId);
+    peer = new Peer(peerId, {{ debug: 2 }});
+    peer.on('open', (id) => {{
+        console.log('Host peer open:', id);
         const url = location.href.split('?')[0] + '?room=' + roomCode;
         drawQR(document.getElementById('qrCanvas'), url);
         showScreen('screenHostLobby');
     }});
     peer.on('error', (err) => {{
-        console.error('Peer error:', err);
+        console.error('Host peer error:', err.type, err);
         if (err.type === 'unavailable-id') {{
             roomCode = genCode();
             document.getElementById('roomCodeDisplay').textContent = roomCode;
@@ -1146,29 +1146,53 @@ function joinRoom() {{
     roomCode = code;
     const peerId = 'tipsklub-' + code.toLowerCase();
 
-    peer = new Peer({{ debug: 0 }});
-    peer.on('open', () => {{
-        hostConn = peer.connect(peerId, {{ reliable: true }});
+    errEl.textContent = '';
+    errEl.style.color = '#94a3b8';
+    errEl.textContent = 'Forbinder...';
+
+    peer = new Peer({{ debug: 2 }});
+    peer.on('open', (myId) => {{
+        console.log('Player peer open:', myId, '-> connecting to:', peerId);
+        errEl.textContent = 'Forbundet til server, finder vært...';
+        hostConn = peer.connect(peerId, {{ reliable: true, serialization: 'json' }});
         hostConn.on('open', () => {{
+            console.log('Connection to host open!');
+            errEl.textContent = '';
+            errEl.style.color = '';
             hostConn.send({{ type: 'join', name }});
             hostConn.on('data', (data) => handlePlayerMessage(data, name));
         }});
         hostConn.on('error', (err) => {{
-            errEl.textContent = 'Kunne ikke forbinde. Tjek koden.';
+            errEl.style.color = '';
+            errEl.textContent = 'Forbindelse fejlede: ' + (err.type || err);
             console.error('Connection error:', err);
+        }});
+        hostConn.on('close', () => {{
+            console.log('Connection to host closed');
         }});
     }});
     peer.on('error', (err) => {{
-        errEl.textContent = 'Forbindelsesfejl: ' + err.type;
-        console.error('Peer error:', err);
+        errEl.style.color = '';
+        console.error('Peer error:', err.type, err);
+        if (err.type === 'peer-unavailable') {{
+            errEl.textContent = 'Vært ikke fundet. Tjek koden og at vært er online.';
+        }} else {{
+            errEl.textContent = 'Forbindelsesfejl: ' + err.type;
+        }}
+    }});
+    peer.on('disconnected', () => {{
+        console.log('Peer disconnected from signaling server');
     }});
 
     // Timeout for connection
     setTimeout(() => {{
         if (!hostConn || !hostConn.open) {{
-            errEl.textContent = 'Timeout. Tjek koden og prøv igen.';
+            if (errEl.textContent.includes('Forbinder') || errEl.textContent.includes('finder')) {{
+                errEl.style.color = '';
+                errEl.textContent = 'Timeout. Tjek koden og prøv igen.';
+            }}
         }}
-    }}, 8000);
+    }}, 10000);
 }}
 
 function handlePlayerMessage(data, myName) {{
