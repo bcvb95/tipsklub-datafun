@@ -495,7 +495,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'{worst["Spiller"]} med {worst["Total Profit"]:+,.0f} kr',
         "chartId": "leaderboard",
-        "ranking": player_ranking("Total Profit"),
+        "ranking": player_ranking("Total Profit", ascending=True),
     })
 
     # ── Q6: MOST BETS (who placed the most individual bets) ──
@@ -564,7 +564,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'Klubben endte på {club_profit:+,.0f} kr samlet',
         "chartId": "cumulative",
-        "ranking": player_ranking("Total Profit"),
+        "ranking": player_ranking("Total Profit", ascending=True),
     })
 
     # ── Q10: MILDEST WORST WEEK ──
@@ -575,7 +575,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     mildest_player = max(worst_per_player, key=worst_per_player.get)
     worst_weeks_ranked = [
         {"name": p, "value": f'{v:+,.0f} kr'}
-        for p, v in sorted(worst_per_player.items(), key=lambda x: x[1])]
+        for p, v in sorted(worst_per_player.items(), key=lambda x: x[1], reverse=True)]
     opts, ci = make_options(
         mildest_player,
         [p for p in PLAYER_ORDER if p != mildest_player])
