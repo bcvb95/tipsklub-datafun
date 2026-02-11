@@ -964,7 +964,10 @@ function hostSendQuestion() {{
     }});
     document.getElementById('hostOptions').innerHTML = optsHtml;
     document.getElementById('hostVoteCount').textContent = '0 / ' + Object.keys(players).length + ' har svaret';
-    document.getElementById('btnReveal').classList.remove('btn-disabled');
+    const btn = document.getElementById('btnReveal');
+    btn.className = 'btn btn-reveal';
+    btn.textContent = 'Vis Svar';
+    btn.onclick = hostReveal;
 
     showScreen('screenHostQ');
 
@@ -977,10 +980,14 @@ function hostReveal() {{
     const q = QUESTIONS[currentQ];
     document.getElementById('btnReveal').classList.add('btn-disabled');
 
-    // Highlight correct/wrong on host options (no names shown live)
+    // Highlight correct/wrong and show who picked what
     q.options.forEach((opt, i) => {{
         const el = document.getElementById('hostOpt' + i);
         el.classList.add(i === q.correct ? 'correct' : 'wrong');
+        const names = votes[i] || [];
+        if (names.length > 0) {{
+            el.innerHTML += `<div class="vote-names">${{names.join(', ')}}</div>`;
+        }}
     }});
 
     // Calculate scores and record answers
@@ -1011,10 +1018,13 @@ function hostReveal() {{
     const msg = {{ type: 'reveal', correct: q.correct, reveal: q.reveal, scores }};
     connections.forEach(c => c.send(msg));
 
-    // Show reveal screen with chart after a short delay
-    setTimeout(() => {{
-        showRevealScreen(q);
-    }}, 1500);
+    // Change button to advance to chart/ranking reveal
+    const btn = document.getElementById('btnReveal');
+    btn.classList.remove('btn-disabled');
+    btn.classList.remove('btn-reveal');
+    btn.classList.add('btn-next');
+    btn.textContent = 'Vis Detaljer';
+    btn.onclick = () => showRevealScreen(q);
 }}
 
 function showRevealScreen(q) {{
