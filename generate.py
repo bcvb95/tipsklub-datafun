@@ -524,7 +524,25 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": league_ranking,
     })
 
-    # ── Q7: MILDEST WORST WEEK ──
+    # ── Q7: HOW MANY WEEKS TURNED A PROFIT? (number question) ──
+    profitable_weeks = int(len(weekly[weekly["Profit"] > 0]))
+    total_weeks = len(weekly)
+    correct_str = f'{profitable_weeks} af {total_weeks}'
+    wrong_options = []
+    for offset in [-6, 4, -11]:
+        w = profitable_weeks + offset
+        wrong_options.append(f'{w} af {total_weeks}')
+    opts, ci = make_options(correct_str, wrong_options)
+    questions.append({
+        "question": f"Hvor mange af {total_weeks} uger endte i plus?",
+        "options": opts, "correct": ci,
+        "reveal": f'{profitable_weeks} af {total_weeks} uger var profitable '
+                  f'({profitable_weeks / total_weeks * 100:.0f}%)',
+        "chartId": "cumulative",
+        "ranking": player_ranking("Win Rate", ".0f", "%"),
+    })
+
+    # ── Q8: MILDEST WORST WEEK ──
     worst_per_player = {}
     for p in PLAYER_ORDER:
         pw = weekly[weekly["Spiller"] == p]
@@ -592,7 +610,36 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
 
-    # ── Q11: BIGGEST LONGSHOT WIN ──
+    # ── Q12: LAST BET CLOSER (who ends weeks on a win most often) ──
+    iso = df_bets.copy()
+    iso["ISOWeek"] = iso["Dato"].dt.isocalendar()["week"].astype(int)
+    iso["ISOYear"] = iso["Dato"].dt.isocalendar()["year"].astype(int)
+    iso["WeekKey"] = iso["ISOYear"].astype(str) + "-W" + iso["ISOWeek"].astype(str).str.zfill(2)
+    last_bets = iso.sort_values("Dato").groupby(["WeekKey", "Spiller"]).tail(1)
+    closer_stats = {}
+    for p in PLAYER_ORDER:
+        pl = last_bets[last_bets["Spiller"] == p]
+        wins = int(len(pl[pl["Profit"] > 0]))
+        total = int(len(pl))
+        closer_stats[p] = (wins, total)
+    closer_best = max(closer_stats, key=lambda p: closer_stats[p][0] / max(closer_stats[p][1], 1))
+    opts, ci = make_options(
+        closer_best,
+        [p for p in PLAYER_ORDER if p != closer_best])
+    closer_ranking = [
+        {"name": p, "value": f'{v[0]}/{v[1]} uger ({v[0]/max(v[1],1)*100:.0f}%)'}
+        for p, v in sorted(closer_stats.items(),
+                           key=lambda x: x[1][0] / max(x[1][1], 1), reverse=True)]
+    questions.append({
+        "question": "Hvem endte oftest ugen på en vindende bet?",
+        "options": opts, "correct": ci,
+        "reveal": f'{closer_best} — {closer_stats[closer_best][0]} af '
+                  f'{closer_stats[closer_best][1]} uger sluttede med en vinder',
+        "chartId": "bigweeks",
+        "ranking": closer_ranking,
+    })
+
+    # ── Q13: BIGGEST LONGSHOT WIN ──
     winners = df_bets[df_bets["Profit"] > 0]
     best_longshot_odds = {}
     for p in PLAYER_ORDER:
@@ -618,7 +665,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": ls_ranking,
     })
 
-    # ── Q12: CLUB TOTAL PROFIT (number question, buffer before finale) ──
+    # ── Q14: CLUB TOTAL PROFIT (number question, buffer before finale) ──
     club_profit = stats["Total Profit"].sum()
     correct_str = f'{club_profit:+,.0f} kr'
     wrong_amounts = []
@@ -633,7 +680,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": player_ranking("Total Profit", ascending=True),
     })
 
-    # ── Q13: THE CHAMPION — GRAND FINALE ──
+    # ── Q15: THE CHAMPION — GRAND FINALE ──
     best = profit_ranked.iloc[0]
     opts, ci = make_options(
         best["Spiller"],
@@ -657,6 +704,9 @@ def generate_quiz_html(quiz_json: str, chart_data: dict,
     total_bets = len(df_bets)
     total_staked = df_bets["Indsats"].sum()
     club_profit = df_bets["Profit"].sum()
+    date_from = df_bets["Dato"].min().strftime("%d/%m/%Y")
+    date_to = df_bets["Dato"].max().strftime("%d/%m/%Y")
+    n_players = df_bets["Spiller"].nunique()
 
     # Quick stats for Q4 reveal
     quick_stats_json = json.dumps({
@@ -872,6 +922,7 @@ body {{
 <div id="screenLanding" class="screen active">
     <div class="landing-title">Tipsklub 2025</div>
     <div class="landing-sub">Interaktiv Quiz</div>
+    <div class="landing-sub" style="margin-bottom:8px;">{date_from} — {date_to} &middot; {n_players} spillere &middot; {total_weeks} uger &middot; {total_bets} bets</div>
     <button class="btn btn-host" onclick="startHost()">Vaert (Host)</button>
     <button class="btn btn-join" onclick="showJoin()">Deltag (Join)</button>
 </div>
