@@ -381,6 +381,52 @@ def chart_high_odds_per_player(df_bets: pd.DataFrame) -> str:
     })
 
 
+def chart_losses_per_player(stats: pd.DataFrame) -> str:
+    """Only players with negative profit — horizontal bar (hides winners)."""
+    losers = stats[stats["Total Profit"] < 0].sort_values("Total Profit", ascending=True)
+    return json.dumps({
+        "labels": losers["Spiller"].tolist(),
+        "data": [round(v, 0) for v in losers["Total Profit"]],
+        "colors": [PLAYER_COLORS[p] for p in losers["Spiller"]],
+    })
+
+
+def chart_closer_rate(df_bets: pd.DataFrame) -> str:
+    """Last-bet-of-week win rate per player — bar chart."""
+    iso = df_bets.copy()
+    iso["ISOWeek"] = iso["Dato"].dt.isocalendar()["week"].astype(int)
+    iso["ISOYear"] = iso["Dato"].dt.isocalendar()["year"].astype(int)
+    iso["WeekKey"] = iso["ISOYear"].astype(str) + "-W" + iso["ISOWeek"].astype(str).str.zfill(2)
+    last_bets = iso.sort_values("Dato").groupby(["WeekKey", "Spiller"]).tail(1)
+    rates = {}
+    for p in PLAYER_ORDER:
+        pl = last_bets[last_bets["Spiller"] == p]
+        wins = int(len(pl[pl["Profit"] > 0]))
+        total = int(len(pl))
+        rates[p] = round(wins / max(total, 1) * 100, 1)
+    sorted_players = sorted(PLAYER_ORDER, key=lambda p: rates[p], reverse=True)
+    return json.dumps({
+        "labels": sorted_players,
+        "data": [rates[p] for p in sorted_players],
+        "colors": [PLAYER_COLORS[p] for p in sorted_players],
+    })
+
+
+def chart_best_winning_odds(df_bets: pd.DataFrame) -> str:
+    """Each player's highest winning odds — horizontal bar chart."""
+    winners = df_bets[df_bets["Profit"] > 0]
+    best_odds = {}
+    for p in PLAYER_ORDER:
+        pw = winners[winners["Spiller"] == p]
+        best_odds[p] = round(float(pw["Odds"].max()), 2) if len(pw) > 0 else 0.0
+    sorted_players = sorted(PLAYER_ORDER, key=lambda p: best_odds[p])
+    return json.dumps({
+        "labels": sorted_players,
+        "data": [best_odds[p] for p in sorted_players],
+        "colors": [PLAYER_COLORS[p] for p in sorted_players],
+    })
+
+
 # ── 4. Award Cards ──────────────────────────────────────────────────────────
 
 def generate_award_cards(stats: pd.DataFrame, weekly: pd.DataFrame) -> str:
@@ -660,7 +706,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "question": "Hvem endte i bunden med størst tab?",
         "options": opts, "correct": ci,
         "reveal": f'{worst["Spiller"]} tog den for holdet — {worst["Total Profit"]:+,.0f} kr!',
-        "chartId": "cumulativeClub",
+        "chartId": "lossesPerPlayer",
         "ranking": loss_ranking,
     })
 
@@ -704,7 +750,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "options": opts, "correct": ci,
         "reveal": f'{closer_best} er Mr. Clutch — {closer_stats[closer_best][0]} af '
                   f'{closer_stats[closer_best][1]} uger sluttede med en vinder!',
-        "chartId": "winrate",
+        "chartId": "closerRate",
         "ranking": closer_ranking,
     })
 
@@ -730,7 +776,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "question": "Hvem ramte den højeste vindende odds?",
         "options": opts, "correct": ci,
         "reveal": f'{ls_player} slog til på odds {ls_odds:.2f} og scorede +{ls_profit:,.0f} kr!',
-        "chartId": "odds",
+        "chartId": "bestWinningOdds",
         "ranking": ls_ranking,
     })
 
@@ -1122,6 +1168,9 @@ const CHART_DATA = {{
     weekdayTotal: {chart_data['weekdayTotal']},
     betsPerPlayer: {chart_data['betsPerPlayer']},
     highOddsPerPlayer: {chart_data['highOddsPerPlayer']},
+    lossesPerPlayer: {chart_data['lossesPerPlayer']},
+    closerRate: {chart_data['closerRate']},
+    bestWinningOdds: {chart_data['bestWinningOdds']},
 }};
 const QUICK_STATS = {quick_stats_json};
 const PLAYER_COLORS = {json.dumps(PLAYER_COLORS)};
@@ -1781,6 +1830,39 @@ function renderChart(canvas, chartId) {{
             options: {{ indexAxis:'y', responsive:true,
                 plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x+' bets (odds 3+)' }} }} }},
                 scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, title:{{ display:true, text:'Antal højodds-bets' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'lossesPerPlayer') {{
+        const d = CHART_DATA.lossesPerPlayer;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ indexAxis:'y', responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' }} }} }},
+                scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'closerRate') {{
+        const d = CHART_DATA.closerRate;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.y+'%' }} }} }},
+                scales:{{ y:{{ max:100, grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+'%' }} }}, x:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'bestWinningOdds') {{
+        const d = CHART_DATA.bestWinningOdds;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ indexAxis:'y', responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => 'odds '+c.parsed.x.toFixed(2) }} }} }},
+                scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, title:{{ display:true, text:'Højeste vindende odds' }} }}, y:{{ grid:{{ display:false }} }} }}
             }}
         }});
     }}
@@ -2565,6 +2647,9 @@ def main():
         "weekdayTotal": chart_weekday_totals(df_bets),
         "betsPerPlayer": chart_bets_per_player(stats),
         "highOddsPerPlayer": chart_high_odds_per_player(df_bets),
+        "lossesPerPlayer": chart_losses_per_player(stats),
+        "closerRate": chart_closer_rate(df_bets),
+        "bestWinningOdds": chart_best_winning_odds(df_bets),
     }
 
     print("Generating award cards...")
