@@ -136,9 +136,69 @@ body {
     .q-text { font-size:1.1rem; }
     .room-code { font-size:2.2rem; padding:12px 20px; }
 }
+
+/* Progress bar */
+.progress-track { position:fixed; top:0; left:0; right:0; height:4px; background:#0f172a; z-index:200; }
+.progress-fill { height:100%; background:linear-gradient(90deg, #2563eb, #7c3aed); transition:width 0.6s ease; width:0%; }
+
+/* Timer */
+.timer-container { width:100%; max-width:500px; height:8px; background:#334155; border-radius:4px; margin:8px 0 16px; overflow:hidden; }
+.timer-bar { height:100%; width:100%; border-radius:4px; background:linear-gradient(90deg, #dc2626, #d97706, #16a34a); }
+.timer-text { font-size:2.8rem; font-weight:900; color:#475569; text-align:center; margin:4px 0; font-variant-numeric:tabular-nums; line-height:1; }
+.timer-text.urgent { color:#dc2626; animation:pulse 0.5s infinite; }
+@keyframes pulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.15); } }
+
+/* Screen transitions */
+.screen.active { animation:fadeSlideIn 0.3s ease; }
+@keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Colored answer options (Kahoot-style) */
+.answer-btn:nth-child(1), .host-opt:nth-child(1) { border-left:5px solid #dc2626; }
+.answer-btn:nth-child(2), .host-opt:nth-child(2) { border-left:5px solid #2563eb; }
+.answer-btn:nth-child(3), .host-opt:nth-child(3) { border-left:5px solid #d97706; }
+.answer-btn:nth-child(4), .host-opt:nth-child(4) { border-left:5px solid #16a34a; }
+.answer-btn:nth-child(5), .host-opt:nth-child(5) { border-left:5px solid #7c3aed; }
+
+/* Score popup */
+.score-popup { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900;
+                color:#fbbf24; text-shadow:0 2px 12px rgba(0,0,0,.5); pointer-events:none; z-index:300;
+                animation:scoreFloat 1.8s ease forwards; }
+@keyframes scoreFloat { 0%{ opacity:1; transform:translate(-50%,-50%) scale(0.5); }
+                         25%{ opacity:1; transform:translate(-50%,-50%) scale(1.3); }
+                         100%{ opacity:0; transform:translate(-50%,-120%) scale(1); } }
+
+/* Confetti canvas */
+#confettiCanvas { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:250; display:none; }
+
+/* Mini scoreboard on reveal */
+.mini-sb { width:100%; max-width:400px; margin:20px 0 8px; }
+.mini-sb-title { text-align:center; font-size:.75rem; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; }
+.mini-sb-row { display:flex; align-items:center; padding:10px 14px; margin:3px 0; background:#1e293b; border-radius:8px; }
+.mini-sb-pos { width:28px; font-weight:900; color:#64748b; font-size:.9rem; }
+.mini-sb-pos.first { color:#fbbf24; }
+.mini-sb-name { flex:1; font-weight:600; }
+.mini-sb-score { font-weight:700; color:#2563eb; font-size:1.05rem; }
+.mini-sb-earned { font-size:.75rem; color:#16a34a; margin-left:6px; font-weight:600; }
+
+/* Enhanced player feedback */
+.feedback-detail { color:#94a3b8; font-size:.9rem; text-align:center; margin:8px 0; }
+.feedback-correct-answer { color:#16a34a; font-weight:700; }
+.feedback-earned { font-size:2rem; font-weight:900; color:#fbbf24; text-align:center; margin:8px 0; animation:fadeSlideIn 0.4s ease; }
+
+/* Final scoreboard animations */
+.sb-row { animation:slideInRow 0.5s ease both; }
+@keyframes slideInRow { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
+.winner-banner { font-size:1.5rem; font-weight:900; color:#fbbf24; text-align:center; margin-bottom:20px;
+                  animation:winnerGlow 2s ease infinite; }
+@keyframes winnerGlow { 0%,100%{ text-shadow:0 0 10px rgba(251,191,36,.2); } 50%{ text-shadow:0 0 25px rgba(251,191,36,.6); } }
+
+/* Locked answer buttons */
+.answer-btn.locked { opacity:.5; pointer-events:none; }
 </style>
 </head>
 <body>
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+<canvas id="confettiCanvas"></canvas>
 
 <!-- Screen: Landing -->
 <div id="screenLanding" class="screen active">
@@ -182,6 +242,8 @@ body {
     <div style="margin-top:48px;width:100%;max-width:500px;display:flex;flex-direction:column;align-items:center;">
         <div class="q-num" id="hostQNum"></div>
         <div class="q-text" id="hostQText"></div>
+        <div class="timer-text" id="hostTimerText"></div>
+        <div class="timer-container"><div class="timer-bar" id="hostTimerBar"></div></div>
         <div class="host-options" id="hostOptions"></div>
         <div style="text-align:center;margin-top:12px;color:#64748b;font-size:.85rem;" id="hostVoteCount"></div>
         <button class="btn btn-reveal" id="btnReveal" onclick="hostReveal()" style="margin-top:16px;">Vis Svar</button>
@@ -201,36 +263,42 @@ body {
             <canvas id="chartReveal" height="200"></canvas>
         </div>
         <div class="qs-grid" id="quickStatsReveal" style="display:none;"></div>
+        <div class="mini-sb" id="miniScoreboard"></div>
         <button class="btn btn-next" id="btnNext" onclick="hostNextQuestion()" style="margin-top:16px;">Naeste Spørgsmål</button>
     </div>
 </div>
 
 <!-- Screen: Player Question -->
 <div id="screenPlayerQ" class="screen">
-    <div style="width:100%;max-width:400px;">
+    <div style="width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;">
         <div class="q-num" id="playerQNum"></div>
         <div class="q-text" id="playerQText"></div>
-        <div id="playerOptions"></div>
+        <div class="timer-text" id="playerTimerText"></div>
+        <div class="timer-container"><div class="timer-bar" id="playerTimerBar"></div></div>
+        <div id="playerOptions" style="width:100%;"></div>
     </div>
 </div>
 
 <!-- Screen: Player Feedback -->
 <div id="screenPlayerFeedback" class="screen">
     <div class="feedback" id="playerFeedback"></div>
+    <div class="feedback-detail" id="playerFeedbackDetail"></div>
+    <div class="feedback-earned" id="playerEarned"></div>
     <div class="score-display" id="playerScore"></div>
     <div class="waiting" style="margin-top:24px;">Venter på naeste spørgsmål<span class="dot">...</span></div>
 </div>
 
 <!-- Screen: Final Scoreboard -->
 <div id="screenScoreboard" class="screen">
-    <div class="landing-title" style="margin-bottom:24px;">Resultater</div>
+    <div class="landing-title" style="margin-bottom:4px;">Resultater</div>
+    <div class="winner-banner" id="winnerBanner"></div>
     <div class="scoreboard" id="scoreboard"></div>
     <button class="btn btn-host" onclick="location.reload()" style="margin-top:24px;">Spil Igen</button>
 </div>
 
 <script>
 // ── Data (embedded at build time) ──
-const QUESTIONS = [{"question": "Hvem ramte den bedste enkeluge i hele 2025?", "options": ["Gustav", "Jonas", "Nixon", "Nikolaj", "Bjørn"], "correct": 3, "reveal": "Nikolaj med +590 kr (uge 2025-W35)", "chartId": "bigweeks", "ranking": [{"name": "Nikolaj", "value": "+590 kr"}, {"name": "Jonas", "value": "+440 kr"}, {"name": "Nixon", "value": "+375 kr"}, {"name": "Bjørn", "value": "+200 kr"}, {"name": "Gustav", "value": "+86 kr"}]}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Okt", "Jan", "Aug", "Sep"], "correct": 2, "reveal": "Aug med +687 kr profit", "chartId": "monthly", "ranking": [{"name": "Aug", "value": "+687 kr"}, {"name": "Dec", "value": "+443 kr"}, {"name": "Sep", "value": "+152 kr"}, {"name": "Okt", "value": "+70 kr"}, {"name": "Maj", "value": "-2 kr"}, {"name": "Mar", "value": "-124 kr"}, {"name": "Jan", "value": "-230 kr"}, {"name": "Feb", "value": "-391 kr"}, {"name": "Nov", "value": "-525 kr"}, {"name": "Apr", "value": "-556 kr"}]}, {"question": "Hvem endte i bunden med størst tab?", "options": ["Nixon", "Gustav", "Jonas", "Bjørn", "Nikolaj"], "correct": 1, "reveal": "Gustav med -677 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvilken af vores top-ligaer gav mest profit?", "options": ["La Liga", "Bundesliga", "English Premier League", "UEFA Champions League"], "correct": 1, "reveal": "Bundesliga med +784 kr på 22 bets", "chartId": "leagues", "ranking": [{"name": "Bundesliga", "value": "+784 kr (22 bets)"}, {"name": "Danish Superliga", "value": "+171 kr (28 bets)"}, {"name": "UEFA Champions League", "value": "+47 kr (46 bets)"}, {"name": "English Premier League", "value": "-621 kr (55 bets)"}, {"name": "La Liga", "value": "-683 kr (25 bets)"}]}, {"question": "Hvem vandt flest af sine uger (højeste win rate)?", "options": ["Bjørn", "Jonas", "Gustav", "Nixon", "Nikolaj"], "correct": 3, "reveal": "Nixon med 78% (7 af 9 uger)", "chartId": "winrate", "ranking": [{"name": "Nixon", "value": "78%"}, {"name": "Bjørn", "value": "44%"}, {"name": "Gustav", "value": "38%"}, {"name": "Nikolaj", "value": "33%"}, {"name": "Jonas", "value": "33%"}]}, {"question": "Hvad var klubbens samlede profit i 2025?", "options": ["+323 kr", "-1,077 kr", "-477 kr", "+1,023 kr"], "correct": 2, "reveal": "Klubben endte på -477 kr samlet", "chartId": "cumulative", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem slap billigst i sin værste uge?", "options": ["Nixon", "Nikolaj", "Gustav", "Jonas", "Bjørn"], "correct": 0, "reveal": "Nixon — værste uge var kun -200 kr (4 andre ramte -300)", "chartId": "bigweeks", "ranking": [{"name": "Bjørn", "value": "-300 kr"}, {"name": "Nikolaj", "value": "-300 kr"}, {"name": "Jonas", "value": "-300 kr"}, {"name": "Gustav", "value": "-300 kr"}, {"name": "Nixon", "value": "-200 kr"}]}, {"question": "Hvem blev årets Tipsklub-mester med mest profit?", "options": ["Bjørn", "Nixon", "Jonas", "Nikolaj", "Gustav"], "correct": 1, "reveal": "Nixon med +655 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}];
+const QUESTIONS = [{"question": "Hvem ramte den bedste enkeluge i hele 2025?", "options": ["Bjørn", "Gustav", "Nixon", "Nikolaj", "Jonas"], "correct": 3, "reveal": "Nikolaj med +590 kr (uge 2025-W35)", "chartId": "bigweeks", "ranking": [{"name": "Nikolaj", "value": "+590 kr"}, {"name": "Jonas", "value": "+440 kr"}, {"name": "Nixon", "value": "+375 kr"}, {"name": "Bjørn", "value": "+200 kr"}, {"name": "Gustav", "value": "+86 kr"}]}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Jan", "Aug", "Sep", "Maj"], "correct": 1, "reveal": "Aug med +687 kr profit", "chartId": "monthly", "ranking": [{"name": "Aug", "value": "+687 kr"}, {"name": "Dec", "value": "+443 kr"}, {"name": "Sep", "value": "+152 kr"}, {"name": "Okt", "value": "+70 kr"}, {"name": "Maj", "value": "-2 kr"}, {"name": "Mar", "value": "-124 kr"}, {"name": "Jan", "value": "-230 kr"}, {"name": "Feb", "value": "-391 kr"}, {"name": "Nov", "value": "-525 kr"}, {"name": "Apr", "value": "-556 kr"}]}, {"question": "Hvem endte i bunden med størst tab?", "options": ["Nixon", "Bjørn", "Jonas", "Gustav", "Nikolaj"], "correct": 3, "reveal": "Gustav med -677 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvilken af vores top-ligaer gav mest profit?", "options": ["English Premier League", "Bundesliga", "La Liga", "UEFA Champions League"], "correct": 1, "reveal": "Bundesliga med +784 kr på 22 bets", "chartId": "leagues", "ranking": [{"name": "Bundesliga", "value": "+784 kr (22 bets)"}, {"name": "Danish Superliga", "value": "+171 kr (28 bets)"}, {"name": "UEFA Champions League", "value": "+47 kr (46 bets)"}, {"name": "English Premier League", "value": "-621 kr (55 bets)"}, {"name": "La Liga", "value": "-683 kr (25 bets)"}]}, {"question": "Hvem vandt flest af sine uger (højeste win rate)?", "options": ["Gustav", "Bjørn", "Nixon", "Jonas", "Nikolaj"], "correct": 2, "reveal": "Nixon med 78% (7 af 9 uger)", "chartId": "winrate", "ranking": [{"name": "Nixon", "value": "78%"}, {"name": "Bjørn", "value": "44%"}, {"name": "Gustav", "value": "38%"}, {"name": "Nikolaj", "value": "33%"}, {"name": "Jonas", "value": "33%"}]}, {"question": "Hvad var klubbens samlede profit i 2025?", "options": ["-477 kr", "+323 kr", "-1,077 kr", "+1,023 kr"], "correct": 0, "reveal": "Klubben endte på -477 kr samlet", "chartId": "cumulative", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem slap billigst i sin værste uge?", "options": ["Nikolaj", "Jonas", "Bjørn", "Gustav", "Nixon"], "correct": 4, "reveal": "Nixon — værste uge var kun -200 kr (4 andre ramte -300)", "chartId": "bigweeks", "ranking": [{"name": "Bjørn", "value": "-300 kr"}, {"name": "Nikolaj", "value": "-300 kr"}, {"name": "Jonas", "value": "-300 kr"}, {"name": "Gustav", "value": "-300 kr"}, {"name": "Nixon", "value": "-200 kr"}]}, {"question": "Hvem blev årets Tipsklub-mester med mest profit?", "options": ["Bjørn", "Jonas", "Nixon", "Gustav", "Nikolaj"], "correct": 2, "reveal": "Nixon med +655 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}];
 const CHART_DATA = {
     cumulative: [{"label": "Bj\u00f8rn", "data": [{"x": "2025-01-08", "y": -175.0}, {"x": "2025-02-11", "y": -338.0}, {"x": "2025-03-20", "y": -522.0}, {"x": "2025-04-22", "y": -364.0}, {"x": "2025-05-31", "y": -164.0}, {"x": "2025-08-12", "y": -116.0}, {"x": "2025-09-22", "y": -89.0}, {"x": "2025-11-03", "y": -389.0}, {"x": "2025-12-18", "y": -442.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-01-21", "y": 175.0}, {"x": "2025-02-25", "y": 175.0}, {"x": "2025-04-01", "y": -125.0}, {"x": "2025-05-05", "y": -250.0}, {"x": "2025-05-31", "y": -300.0}, {"x": "2025-08-25", "y": 290.0}, {"x": "2025-10-17", "y": 279.0}, {"x": "2025-11-25", "y": 354.0}, {"x": "2025-12-29", "y": 254.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-02-03", "y": 72.0}, {"x": "2025-03-11", "y": -128.0}, {"x": "2025-04-15", "y": -60.0}, {"x": "2025-05-19", "y": 22.0}, {"x": "2025-05-31", "y": -28.0}, {"x": "2025-08-17", "y": 132.0}, {"x": "2025-09-16", "y": 506.0}, {"x": "2025-10-29", "y": 585.0}, {"x": "2025-12-09", "y": 655.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-01-14", "y": -165.0}, {"x": "2025-02-17", "y": -465.0}, {"x": "2025-03-24", "y": -114.0}, {"x": "2025-04-29", "y": -297.0}, {"x": "2025-05-31", "y": -347.0}, {"x": "2025-08-18", "y": -457.0}, {"x": "2025-09-30", "y": -407.0}, {"x": "2025-11-21", "y": -707.0}, {"x": "2025-12-22", "y": -267.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-01-29", "y": -65.0}, {"x": "2025-03-04", "y": -155.0}, {"x": "2025-04-12", "y": -455.0}, {"x": "2025-05-15", "y": -415.0}, {"x": "2025-05-31", "y": -465.0}, {"x": "2025-09-13", "y": -765.0}, {"x": "2025-10-21", "y": -763.0}, {"x": "2025-12-03", "y": -677.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}],
     leaderboard: {"labels": ["Gustav", "Bj\u00f8rn", "Jonas", "Nikolaj", "Nixon"], "data": [-677.0, -442.0, -267.0, 254.0, 655.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#2563eb", "#16a34a"]},
@@ -280,11 +348,151 @@ let answerOrder = []; // host: tracks order of correct answers for speed bonus
 let revealChart = null;
 let quizStarted = false;
 let disconnectedPlayers = {}; // host: name -> player data (preserved on disconnect)
+const TIMER_DURATION = 30; // seconds per question
+let timerRAF = null;
+let questionStartTime = 0;
+let answersLocked = false;
+let lastEarned = {}; // host: connId -> points earned this round
+let audioCtx = null;
+
+// ── Audio (Web Audio API) ──
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+function playSound(type) {
+    try {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        if (type === 'correct') {
+            [523.25, 659.25, 783.99].forEach((freq, i) => {
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination); o.type = 'sine';
+                o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+                g.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.12);
+                g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.12 + 0.3);
+                o.start(ctx.currentTime + i * 0.12); o.stop(ctx.currentTime + i * 0.12 + 0.3);
+            });
+        } else if (type === 'wrong') {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination); o.type = 'sawtooth';
+            o.frequency.setValueAtTime(200, ctx.currentTime);
+            o.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+            g.gain.setValueAtTime(0.15, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+            o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.3);
+        } else if (type === 'tick') {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination); o.type = 'sine';
+            o.frequency.setValueAtTime(880, ctx.currentTime);
+            g.gain.setValueAtTime(0.08, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.06);
+            o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.06);
+        } else if (type === 'fanfare') {
+            [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination); o.type = 'triangle';
+                o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.18);
+                g.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.18);
+                g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.5);
+                o.start(ctx.currentTime + i * 0.18); o.stop(ctx.currentTime + i * 0.18 + 0.5);
+            });
+        }
+    } catch(e) {}
+}
+
+// ── Timer ──
+function startTimer(barId, textId, onExpire) {
+    questionStartTime = Date.now();
+    answersLocked = false;
+    const bar = document.getElementById(barId);
+    const text = document.getElementById(textId);
+    const duration = TIMER_DURATION * 1000;
+    let lastSecs = -1;
+    if (bar) { bar.style.width = '100%'; }
+    if (text) { text.textContent = TIMER_DURATION; text.classList.remove('urgent'); }
+
+    cancelAnimationFrame(timerRAF);
+    function tick() {
+        const elapsed = Date.now() - questionStartTime;
+        const remaining = Math.max(0, duration - elapsed);
+        const pct = remaining / duration * 100;
+        if (bar) bar.style.width = pct + '%';
+        const secs = Math.ceil(remaining / 1000);
+        if (text && secs !== lastSecs) {
+            text.textContent = secs;
+            if (secs <= 5 && secs > 0) {
+                text.classList.add('urgent');
+                if (mode === 'player') playSound('tick');
+            }
+            lastSecs = secs;
+        }
+        if (remaining > 0) {
+            timerRAF = requestAnimationFrame(tick);
+        } else {
+            if (text) { text.textContent = '0'; text.classList.add('urgent'); }
+            if (onExpire) onExpire();
+        }
+    }
+    timerRAF = requestAnimationFrame(tick);
+}
+function stopTimer() {
+    cancelAnimationFrame(timerRAF);
+    timerRAF = null;
+}
+
+// ── Confetti ──
+function showConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    canvas.style.display = 'block';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const colors = ['#fbbf24','#dc2626','#2563eb','#16a34a','#d97706','#7c3aed','#f472b6'];
+    const particles = [];
+    for (let i = 0; i < 180; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 10 + 4, h: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vx: Math.random() * 6 - 3, vy: Math.random() * 3 + 2,
+            spin: Math.random() * 0.2 - 0.1, angle: Math.random() * Math.PI * 2
+        });
+    }
+    let frame = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.angle += p.spin; p.vy += 0.06;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+            ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - frame / 200);
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+        });
+        frame++;
+        if (frame < 200) requestAnimationFrame(animate);
+        else canvas.style.display = 'none';
+    }
+    animate();
+}
+
+// ── Score popup ──
+function showScorePopup(text) {
+    const el = document.createElement('div');
+    el.className = 'score-popup';
+    el.textContent = text;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+}
 
 // ── Screen management ──
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+}
+function updateProgress() {
+    const pct = quizStarted ? ((currentQ + 1) / QUESTIONS.length * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
 }
 
 // ── ICE config (STUN for same-network WebRTC) ──
@@ -363,6 +571,7 @@ function handleHostMessage(conn, data) {
         }
     }
     if (data.type === 'answer') {
+        if (answersLocked) return; // Timer expired
         const p = players[conn.connectionId];
         if (!p) return;
         const optIdx = parseInt(data.option);
@@ -378,6 +587,7 @@ function handleHostMessage(conn, data) {
         }
 
         p.answered = true;
+        p.answerTime = Date.now() - questionStartTime; // track response time
         if (!votes[optIdx]) votes[optIdx] = [];
         votes[optIdx].push(p.name);
 
@@ -430,7 +640,9 @@ function hostSendQuestion() {
     const q = QUESTIONS[currentQ];
     votes = {};
     answerOrder = [];
-    Object.values(players).forEach(p => p.answered = false);
+    lastEarned = {};
+    answersLocked = false;
+    Object.values(players).forEach(p => { p.answered = false; p.answerTime = null; });
 
     // Update host screen
     document.getElementById('statusRoom').textContent = roomCode;
@@ -449,14 +661,23 @@ function hostSendQuestion() {
     btn.textContent = 'Vis Svar';
     btn.onclick = hostReveal;
 
+    updateProgress();
     showScreen('screenHostQ');
 
+    // Start countdown timer on host
+    startTimer('hostTimerBar', 'hostTimerText', () => {
+        answersLocked = true;
+        document.getElementById('hostTimerText').textContent = 'Tid!';
+    });
+
     // Send to players
-    const msg = { type: 'question', index: currentQ, question: q.question, options: q.options };
+    const msg = { type: 'question', index: currentQ, question: q.question, options: q.options, timer: TIMER_DURATION };
     connections.forEach(c => c.send(msg));
 }
 
 function hostReveal() {
+    stopTimer();
+    answersLocked = true;
     const q = QUESTIONS[currentQ];
     document.getElementById('btnReveal').classList.add('btn-disabled');
 
@@ -470,33 +691,44 @@ function hostReveal() {
         }
     });
 
-    // Calculate scores and record answers
+    // Calculate time-based scores and record answers
+    lastEarned = {};
     Object.entries(players).forEach(([connId, p]) => {
         let playerVote = -1;
         Object.entries(votes).forEach(([optIdx, names]) => {
             if (names.includes(p.name)) playerVote = parseInt(optIdx);
         });
         const wasCorrect = playerVote === q.correct;
+        let earned = 0;
+        if (wasCorrect) {
+            // Time-based scoring: 500-1000 pts based on response time
+            const elapsed = p.answerTime || (TIMER_DURATION * 1000);
+            const timeFraction = Math.min(elapsed / (TIMER_DURATION * 1000), 1);
+            earned = Math.round(500 + 500 * (1 - timeFraction));
+            // Speed bonus: +200 for first correct answer
+            if (answerOrder.length > 0 && answerOrder[0] === connId) {
+                earned += 200;
+            }
+            p.score += earned;
+            p.correct_count += 1;
+        }
+        lastEarned[connId] = earned;
         p.answers.push({
             question: q.question,
             picked: playerVote >= 0 ? q.options[playerVote] : '—',
             correct: q.options[q.correct],
             right: wasCorrect,
         });
-        if (wasCorrect) {
-            p.score += 100;
-            p.correct_count += 1;
-            if (answerOrder.length > 0 && answerOrder[0] === connId) {
-                p.score += 50;
-            }
-        }
     });
 
-    // Send reveal to players
+    // Send reveal to each player with their individual earned points
     const scores = {};
     Object.values(players).forEach(p => { scores[p.name] = p.score; });
-    const msg = { type: 'reveal', correct: q.correct, reveal: q.reveal, scores };
-    connections.forEach(c => c.send(msg));
+    connections.forEach(c => {
+        const p = players[c.connectionId];
+        const earned = lastEarned[c.connectionId] || 0;
+        c.send({ type: 'reveal', correct: q.correct, correctText: q.options[q.correct], earned, scores });
+    });
 
     // Change button to advance to chart/ranking reveal
     const btn = document.getElementById('btnReveal');
@@ -555,6 +787,23 @@ function showRevealScreen(q) {
 
         revealChart = renderChart(newCanvas, q.chartId);
     }
+
+    // Mini-scoreboard (live standings)
+    const miniSb = document.getElementById('miniScoreboard');
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    miniSb.innerHTML = '<div class="mini-sb-title">Standings</div>' +
+        sorted.map((p, i) => {
+            const color = PLAYER_COLORS[p.name] || '#2563eb';
+            const connId = Object.entries(players).find(([k, v]) => v === p)?.[0];
+            const earned = connId ? (lastEarned[connId] || 0) : 0;
+            const earnedHtml = earned > 0 ? `<span class="mini-sb-earned">+${earned}</span>` : '';
+            const posClass = i === 0 ? 'mini-sb-pos first' : 'mini-sb-pos';
+            return `<div class="mini-sb-row" style="animation-delay:${i * 0.08}s">
+                <span class="${posClass}">${i + 1}.</span>
+                <span class="mini-sb-name" style="color:${color}">${p.name}</span>
+                <span class="mini-sb-score">${p.score}</span>${earnedHtml}
+            </div>`;
+        }).join('');
 
     // Button text
     const btnNext = document.getElementById('btnNext');
@@ -676,13 +925,22 @@ function showFinalScoreboard() {
     const rankIcons = ['gold', 'silver', 'bronze'];
     const rankEmoji = ['1', '2', '3'];
 
+    // Winner banner
+    if (sorted.length > 0) {
+        const winner = sorted[0];
+        const winnerColor = PLAYER_COLORS[winner.name] || '#fbbf24';
+        document.getElementById('winnerBanner').innerHTML =
+            `<span style="color:${winnerColor}">${winner.name}</span> vinder!`;
+    }
+
     let html = '';
     sorted.forEach((p, i) => {
         const rankClass = i < 3 ? rankIcons[i] : '';
         const rank = i < 3 ? rankEmoji[i] : (i + 1);
         const color = PLAYER_COLORS[p.name] || '#2563eb';
         const pid = 'answers-' + i;
-        html += `<div class="sb-row" onclick="document.getElementById('${pid}').style.display=document.getElementById('${pid}').style.display==='none'?'block':'none'" style="cursor:pointer;">
+        const delay = (sorted.length - 1 - i) * 0.15; // reveal bottom-up: winner appears last
+        html += `<div class="sb-row" onclick="document.getElementById('${pid}').style.display=document.getElementById('${pid}').style.display==='none'?'block':'none'" style="cursor:pointer;animation-delay:${delay}s;opacity:0;">
             <div class="sb-rank ${rankClass}">${rank}</div>
             <div class="sb-name" style="color:${color}">${p.name}</div>
             <div><span class="sb-score">${p.score} pts</span><span class="sb-correct">${p.correct_count}/${QUESTIONS.length}</span></div>
@@ -703,6 +961,13 @@ function showFinalScoreboard() {
     connections.forEach(c => c.send({ type: 'scoreboard', scores: scoresArr }));
 
     showScreen('screenScoreboard');
+
+    // Celebration effects (delayed to coincide with winner row appearing)
+    const celebDelay = (sorted.length - 1) * 150 + 300;
+    setTimeout(() => {
+        playSound('fanfare');
+        showConfetti();
+    }, celebDelay);
 }
 
 // ── PLAYER ──
@@ -816,6 +1081,7 @@ function handlePlayerMessage(data, myName) {
     }
     if (data.type === 'question') {
         myAnswer = -1;
+        answersLocked = false;
         document.getElementById('playerQNum').textContent = 'Spørgsmål ' + (data.index + 1) + ' af ' + QUESTIONS.length;
         document.getElementById('playerQText').textContent = data.question;
         let html = '';
@@ -823,35 +1089,54 @@ function handlePlayerMessage(data, myName) {
             html += `<button class="answer-btn" id="ansBtn${i}" onclick="playerAnswer(${i})">${opt}</button>`;
         });
         document.getElementById('playerOptions').innerHTML = html;
+        updateProgress();
         showScreen('screenPlayerQ');
+
+        // Start player timer
+        const duration = data.timer || TIMER_DURATION;
+        startTimer('playerTimerBar', 'playerTimerText', () => {
+            answersLocked = true;
+            document.getElementById('playerTimerText').textContent = 'Tid!';
+            document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('locked'));
+        });
     }
     if (data.type === 'reveal') {
+        stopTimer();
         const q = data;
-        // Show feedback
         const wasCorrect = myAnswer === q.correct;
         const fb = document.getElementById('playerFeedback');
+        const detail = document.getElementById('playerFeedbackDetail');
+        const earnedEl = document.getElementById('playerEarned');
+
         if (myAnswer === -1) {
             fb.textContent = 'Ikke svaret!';
             fb.className = 'feedback wrong';
+            playSound('wrong');
         } else if (wasCorrect) {
             fb.textContent = 'Rigtigt!';
             fb.className = 'feedback right';
+            playSound('correct');
         } else {
             fb.textContent = 'Forkert!';
             fb.className = 'feedback wrong';
+            playSound('wrong');
         }
 
-        // Highlight answers
-        if (myAnswer >= 0) {
-            const myBtn = document.getElementById('ansBtn' + myAnswer);
-            if (myBtn) {
-                myBtn.classList.add(wasCorrect ? 'correct-pick' : 'wrong-pick');
-            }
+        // Show correct answer and earned points
+        if (q.correctText) {
+            detail.innerHTML = 'Svar: <span class="feedback-correct-answer">' + q.correctText + '</span>';
+        }
+        const earned = q.earned || 0;
+        if (earned > 0) {
+            earnedEl.textContent = '+' + earned + ' pts';
+            showScorePopup('+' + earned);
+        } else {
+            earnedEl.textContent = '';
         }
 
         myScore = q.scores[myName] || 0;
         myCorrectCount = wasCorrect ? (myCorrectCount + 1) : myCorrectCount;
-        document.getElementById('playerScore').textContent = myScore + ' point';
+        document.getElementById('playerScore').textContent = 'Total: ' + myScore + ' point';
 
         showScreen('screenPlayerFeedback');
     }
@@ -859,6 +1144,15 @@ function handlePlayerMessage(data, myName) {
         const sorted = data.scores;
         const rankIcons = ['gold', 'silver', 'bronze'];
         const rankEmoji = ['1', '2', '3'];
+
+        // Winner banner
+        if (sorted.length > 0) {
+            const winner = sorted[0];
+            const winnerColor = PLAYER_COLORS[winner.name] || '#fbbf24';
+            document.getElementById('winnerBanner').innerHTML =
+                `<span style="color:${winnerColor}">${winner.name}</span> vinder!`;
+        }
+
         let html = '';
         sorted.forEach((p, i) => {
             const rankClass = i < 3 ? rankIcons[i] : '';
@@ -866,7 +1160,8 @@ function handlePlayerMessage(data, myName) {
             const color = PLAYER_COLORS[p.name] || '#2563eb';
             const highlight = p.name === myName ? 'border:2px solid #2563eb;' : '';
             const pid = 'p-answers-' + i;
-            html += `<div class="sb-row" style="${highlight}cursor:pointer;" onclick="document.getElementById('${pid}').style.display=document.getElementById('${pid}').style.display==='none'?'block':'none'">
+            const delay = (sorted.length - 1 - i) * 0.15;
+            html += `<div class="sb-row" style="${highlight}cursor:pointer;animation-delay:${delay}s;opacity:0;" onclick="document.getElementById('${pid}').style.display=document.getElementById('${pid}').style.display==='none'?'block':'none'">
                 <div class="sb-rank ${rankClass}">${rank}</div>
                 <div class="sb-name" style="color:${color}">${p.name}</div>
                 <div><span class="sb-score">${p.score} pts</span><span class="sb-correct">${p.correct}/${QUESTIONS.length}</span></div>
@@ -882,10 +1177,18 @@ function handlePlayerMessage(data, myName) {
         });
         document.getElementById('scoreboard').innerHTML = html;
         showScreen('screenScoreboard');
+
+        // Celebration effects
+        const celebDelay = (sorted.length - 1) * 150 + 300;
+        setTimeout(() => {
+            playSound('fanfare');
+            showConfetti();
+        }, celebDelay);
     }
 }
 
 function playerAnswer(idx) {
+    if (answersLocked) return;
     myAnswer = idx;
 
     // Highlight selected, keep all enabled for changing
