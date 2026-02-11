@@ -229,8 +229,9 @@ body {
 </div>
 
 <script>
+console.log('Quiz version: 2025-02-11-v3');
 // ── Data (embedded at build time) ──
-const QUESTIONS = [{"question": "Hvem blev årets Tipsklub-mester med mest profit?", "options": ["Gustav", "Nixon", "Jonas", "Bjørn", "Nikolaj"], "correct": 1, "reveal": "Nixon med +655 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem endte i bunden med størst tab?", "options": ["Jonas", "Bjørn", "Nixon", "Nikolaj", "Gustav"], "correct": 4, "reveal": "Gustav med -677 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem vandt flest af sine uger (højeste win rate)?", "options": ["Jonas", "Nikolaj", "Nixon", "Gustav", "Bjørn"], "correct": 2, "reveal": "Nixon med 78% (7 af 9 uger)", "chartId": "winrate", "ranking": [{"name": "Nixon", "value": "78%"}, {"name": "Bjørn", "value": "44%"}, {"name": "Gustav", "value": "38%"}, {"name": "Nikolaj", "value": "33%"}, {"name": "Jonas", "value": "33%"}]}, {"question": "Hvem ramte den bedste enkeluge i hele 2025?", "options": ["Nixon", "Bjørn", "Gustav", "Nikolaj", "Jonas"], "correct": 3, "reveal": "Nikolaj med +590 kr (uge 2025-W35)", "chartId": "bigweeks", "ranking": [{"name": "Nikolaj", "value": "+590 kr"}, {"name": "Jonas", "value": "+440 kr"}, {"name": "Nixon", "value": "+375 kr"}, {"name": "Bjørn", "value": "+200 kr"}, {"name": "Gustav", "value": "+86 kr"}]}, {"question": "Hvem slap billigst i sin værste uge?", "options": ["Nixon", "Nikolaj", "Jonas", "Gustav", "Bjørn"], "correct": 0, "reveal": "Nixon — værste uge var kun -200 kr (4 andre ramte -300)", "chartId": "bigweeks", "ranking": [{"name": "Bjørn", "value": "-300 kr"}, {"name": "Nikolaj", "value": "-300 kr"}, {"name": "Jonas", "value": "-300 kr"}, {"name": "Gustav", "value": "-300 kr"}, {"name": "Nixon", "value": "-200 kr"}]}, {"question": "Hvilken af vores top-ligaer gav mest profit?", "options": ["UEFA Champions League", "English Premier League", "Danish Superliga", "Bundesliga"], "correct": 3, "reveal": "Bundesliga med +784 kr på 22 bets", "chartId": "leagues", "ranking": [{"name": "Bundesliga", "value": "+784 kr (22 bets)"}, {"name": "Danish Superliga", "value": "+171 kr (28 bets)"}, {"name": "UEFA Champions League", "value": "+47 kr (46 bets)"}, {"name": "English Premier League", "value": "-621 kr (55 bets)"}, {"name": "La Liga", "value": "-683 kr (25 bets)"}]}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Nov", "Aug", "Sep", "Mar"], "correct": 1, "reveal": "Aug med +687 kr profit", "chartId": "monthly", "ranking": [{"name": "Aug", "value": "+687 kr"}, {"name": "Dec", "value": "+443 kr"}, {"name": "Sep", "value": "+152 kr"}, {"name": "Okt", "value": "+70 kr"}, {"name": "Maj", "value": "-2 kr"}, {"name": "Mar", "value": "-124 kr"}, {"name": "Jan", "value": "-230 kr"}, {"name": "Feb", "value": "-391 kr"}, {"name": "Nov", "value": "-525 kr"}, {"name": "Apr", "value": "-556 kr"}]}, {"question": "Hvem fik mest valuta for pengene (bedste ROI)?", "options": ["Bjørn", "Nikolaj", "Gustav", "Nixon", "Jonas"], "correct": 3, "reveal": "Nixon med +30.5% afkast", "chartId": "cumulative", "ranking": [{"name": "Nixon", "value": "+30.5%"}, {"name": "Nikolaj", "value": "+11.3%"}, {"name": "Jonas", "value": "-10.9%"}, {"name": "Bjørn", "value": "-18.4%"}, {"name": "Gustav", "value": "-31.5%"}]}];
+const QUESTIONS = [{"question": "Hvem blev årets Tipsklub-mester med mest profit?", "options": ["Jonas", "Nikolaj", "Nixon", "Bjørn", "Gustav"], "correct": 2, "reveal": "Nixon med +655 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem endte i bunden med størst tab?", "options": ["Bjørn", "Jonas", "Nixon", "Nikolaj", "Gustav"], "correct": 4, "reveal": "Gustav med -677 kr", "chartId": "leaderboard", "ranking": [{"name": "Nixon", "value": "+655 kr"}, {"name": "Nikolaj", "value": "+254 kr"}, {"name": "Jonas", "value": "-267 kr"}, {"name": "Bjørn", "value": "-442 kr"}, {"name": "Gustav", "value": "-677 kr"}]}, {"question": "Hvem vandt flest af sine uger (højeste win rate)?", "options": ["Nixon", "Nikolaj", "Jonas", "Bjørn", "Gustav"], "correct": 0, "reveal": "Nixon med 78% (7 af 9 uger)", "chartId": "winrate", "ranking": [{"name": "Nixon", "value": "78%"}, {"name": "Bjørn", "value": "44%"}, {"name": "Gustav", "value": "38%"}, {"name": "Nikolaj", "value": "33%"}, {"name": "Jonas", "value": "33%"}]}, {"question": "Hvem ramte den bedste enkeluge i hele 2025?", "options": ["Nikolaj", "Jonas", "Bjørn", "Gustav", "Nixon"], "correct": 0, "reveal": "Nikolaj med +590 kr (uge 2025-W35)", "chartId": "bigweeks", "ranking": [{"name": "Nikolaj", "value": "+590 kr"}, {"name": "Jonas", "value": "+440 kr"}, {"name": "Nixon", "value": "+375 kr"}, {"name": "Bjørn", "value": "+200 kr"}, {"name": "Gustav", "value": "+86 kr"}]}, {"question": "Hvem slap billigst i sin værste uge?", "options": ["Nixon", "Bjørn", "Nikolaj", "Jonas", "Gustav"], "correct": 0, "reveal": "Nixon — værste uge var kun -200 kr (4 andre ramte -300)", "chartId": "bigweeks", "ranking": [{"name": "Bjørn", "value": "-300 kr"}, {"name": "Nikolaj", "value": "-300 kr"}, {"name": "Jonas", "value": "-300 kr"}, {"name": "Gustav", "value": "-300 kr"}, {"name": "Nixon", "value": "-200 kr"}]}, {"question": "Hvilken af vores top-ligaer gav mest profit?", "options": ["UEFA Champions League", "Bundesliga", "La Liga", "English Premier League"], "correct": 1, "reveal": "Bundesliga med +784 kr på 22 bets", "chartId": "leagues", "ranking": [{"name": "Bundesliga", "value": "+784 kr (22 bets)"}, {"name": "Danish Superliga", "value": "+171 kr (28 bets)"}, {"name": "UEFA Champions League", "value": "+47 kr (46 bets)"}, {"name": "English Premier League", "value": "-621 kr (55 bets)"}, {"name": "La Liga", "value": "-683 kr (25 bets)"}]}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Aug", "Maj", "Okt", "Sep"], "correct": 0, "reveal": "Aug med +687 kr profit", "chartId": "monthly", "ranking": [{"name": "Aug", "value": "+687 kr"}, {"name": "Dec", "value": "+443 kr"}, {"name": "Sep", "value": "+152 kr"}, {"name": "Okt", "value": "+70 kr"}, {"name": "Maj", "value": "-2 kr"}, {"name": "Mar", "value": "-124 kr"}, {"name": "Jan", "value": "-230 kr"}, {"name": "Feb", "value": "-391 kr"}, {"name": "Nov", "value": "-525 kr"}, {"name": "Apr", "value": "-556 kr"}]}, {"question": "Hvem fik mest valuta for pengene (bedste ROI)?", "options": ["Jonas", "Nixon", "Bjørn", "Gustav", "Nikolaj"], "correct": 1, "reveal": "Nixon med +30.5% afkast", "chartId": "cumulative", "ranking": [{"name": "Nixon", "value": "+30.5%"}, {"name": "Nikolaj", "value": "+11.3%"}, {"name": "Jonas", "value": "-10.9%"}, {"name": "Bjørn", "value": "-18.4%"}, {"name": "Gustav", "value": "-31.5%"}]}];
 const CHART_DATA = {
     cumulative: [{"label": "Bj\u00f8rn", "data": [{"x": "2025-01-08", "y": -175.0}, {"x": "2025-02-11", "y": -338.0}, {"x": "2025-03-20", "y": -522.0}, {"x": "2025-04-22", "y": -364.0}, {"x": "2025-05-31", "y": -164.0}, {"x": "2025-08-12", "y": -116.0}, {"x": "2025-09-22", "y": -89.0}, {"x": "2025-11-03", "y": -389.0}, {"x": "2025-12-18", "y": -442.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-01-21", "y": 175.0}, {"x": "2025-02-25", "y": 175.0}, {"x": "2025-04-01", "y": -125.0}, {"x": "2025-05-05", "y": -250.0}, {"x": "2025-05-31", "y": -300.0}, {"x": "2025-08-25", "y": 290.0}, {"x": "2025-10-17", "y": 279.0}, {"x": "2025-11-25", "y": 354.0}, {"x": "2025-12-29", "y": 254.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-02-03", "y": 72.0}, {"x": "2025-03-11", "y": -128.0}, {"x": "2025-04-15", "y": -60.0}, {"x": "2025-05-19", "y": 22.0}, {"x": "2025-05-31", "y": -28.0}, {"x": "2025-08-17", "y": 132.0}, {"x": "2025-09-16", "y": 506.0}, {"x": "2025-10-29", "y": 585.0}, {"x": "2025-12-09", "y": 655.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-01-14", "y": -165.0}, {"x": "2025-02-17", "y": -465.0}, {"x": "2025-03-24", "y": -114.0}, {"x": "2025-04-29", "y": -297.0}, {"x": "2025-05-31", "y": -347.0}, {"x": "2025-08-18", "y": -457.0}, {"x": "2025-09-30", "y": -407.0}, {"x": "2025-11-21", "y": -707.0}, {"x": "2025-12-22", "y": -267.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-01-29", "y": -65.0}, {"x": "2025-03-04", "y": -155.0}, {"x": "2025-04-12", "y": -455.0}, {"x": "2025-05-15", "y": -415.0}, {"x": "2025-05-31", "y": -465.0}, {"x": "2025-09-13", "y": -765.0}, {"x": "2025-10-21", "y": -763.0}, {"x": "2025-12-03", "y": -677.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}],
     leaderboard: {"labels": ["Gustav", "Bj\u00f8rn", "Jonas", "Nikolaj", "Nixon"], "data": [-677.0, -442.0, -267.0, 254.0, 655.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#2563eb", "#16a34a"]},
@@ -364,21 +365,30 @@ function handleHostMessage(conn, data) {
     }
     if (data.type === 'answer') {
         const p = players[conn.connectionId];
-        if (!p) return;
+        if (!p) {
+            console.warn('Answer from unknown connection:', conn.connectionId);
+            return;
+        }
+        const optIdx = parseInt(data.option);
+        console.log('Answer from', p.name, ':', optIdx, 'previously answered:', p.answered);
 
         // Remove previous vote if changing answer
         if (p.answered) {
-            Object.values(votes).forEach(arr => {
+            for (const key of Object.keys(votes)) {
+                const arr = votes[key];
                 const idx = arr.indexOf(p.name);
-                if (idx !== -1) arr.splice(idx, 1);
-            });
+                if (idx !== -1) {
+                    arr.splice(idx, 1);
+                    console.log('Removed old vote from option', key);
+                }
+            }
             answerOrder = answerOrder.filter(id => id !== conn.connectionId);
         }
 
         p.answered = true;
-        const optIdx = data.option;
         if (!votes[optIdx]) votes[optIdx] = [];
         votes[optIdx].push(p.name);
+        console.log('Added vote to option', optIdx, 'votes now:', JSON.stringify(votes));
 
         // Track correct answer order for speed bonus (first correct stays first)
         const q = QUESTIONS[currentQ];
@@ -408,12 +418,20 @@ function updateHostVotes() {
     const q = QUESTIONS[currentQ];
     const totalPlayers = Object.keys(players).length;
     const totalVotes = Object.values(votes).reduce((s, arr) => s + arr.length, 0);
+    console.log('updateHostVotes called. votes:', JSON.stringify(votes), 'totalVotes:', totalVotes);
 
     q.options.forEach((opt, i) => {
         const count = (votes[i] || []).length;
         const el = document.getElementById('hostOpt' + i);
         if (el) {
-            el.querySelector('.count').textContent = count;
+            const countEl = el.querySelector('.count');
+            if (countEl) {
+                countEl.textContent = count;
+            } else {
+                console.warn('No .count element found in hostOpt' + i);
+            }
+        } else {
+            console.warn('No element found: hostOpt' + i);
         }
     });
     document.getElementById('hostVoteCount').textContent = totalVotes + ' / ' + totalPlayers + ' har svaret';
