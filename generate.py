@@ -514,6 +514,7 @@ def generate_quiz_html(quiz_json: str, chart_data: dict,
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
 *{{ margin:0; padding:0; box-sizing:border-box; }}
@@ -733,27 +734,25 @@ const CHART_DATA = {{
 const QUICK_STATS = {quick_stats_json};
 const PLAYER_COLORS = {json.dumps(PLAYER_COLORS)};
 
-// ── QR Code (minimal inline generator) ──
+// ── QR Code ──
 function drawQR(canvas, text) {{
-    // Use a simple approach: encode URL as text pattern on canvas
-    // For production, we use a CDN-free minimal QR encoder
-    const size = 180;
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const modules = qr.getModuleCount();
+    const cellSize = Math.floor(180 / modules);
+    const size = cellSize * modules;
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 14px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Scan eller gaa til:', size/2, 40);
-    ctx.font = '11px Inter, sans-serif';
-    const urlLines = text.match(/.{{1,28}}/g) || [text];
-    urlLines.forEach((line, i) => {{
-        ctx.fillText(line, size/2, 65 + i * 18);
-    }});
-    ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillText(roomCode, size/2, 150);
+    for (let r = 0; r < modules; r++) {{
+        for (let c = 0; c < modules; c++) {{
+            ctx.fillStyle = qr.isDark(r, c) ? '#1e293b' : '#fff';
+            ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }}
+    }}
 }}
 
 // ── State ──
