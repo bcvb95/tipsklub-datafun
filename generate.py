@@ -925,8 +925,9 @@ function handleHostMessage(conn, data) {{
 
         // Remove previous vote if changing answer
         if (p.answered) {{
-            Object.keys(votes).forEach(key => {{
-                votes[key] = votes[key].filter(n => n !== p.name);
+            Object.values(votes).forEach(arr => {{
+                const idx = arr.indexOf(p.name);
+                if (idx !== -1) arr.splice(idx, 1);
             }});
             answerOrder = answerOrder.filter(id => id !== conn.connectionId);
         }}
