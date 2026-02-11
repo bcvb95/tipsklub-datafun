@@ -367,7 +367,7 @@ def card(emoji: str, title: str, player: str, stat: str, subtitle: str) -> str:
 def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
                             df_bets: pd.DataFrame, chart_data: dict) -> str:
     """Build JSON quiz questions from computed stats. Each question has
-    question text, 4 options, correct index, and chart config for reveal."""
+    question text, options, correct index, chart config, and ranking for reveal."""
     questions = []
 
     # Helper: shuffle options, return (options_list, correct_index)
@@ -376,113 +376,163 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         random.shuffle(opts)
         return opts, opts.index(correct)
 
-    # Q1: Most profit
-    best = stats.loc[stats["Total Profit"].idxmax()]
-    others = [p for p in PLAYER_ORDER if p != best["Spiller"]]
-    random.shuffle(others)
-    opts, ci = make_options(best["Spiller"], others)
+    # Helper: build ranking list for a stat column (descending)
+    def player_ranking(col: str, fmt: str = "+,.0f", suffix: str = " kr",
+                       ascending: bool = False) -> list[dict]:
+        sorted_stats = stats.sort_values(col, ascending=ascending)
+        return [{"name": r["Spiller"], "value": f'{r[col]:{fmt}}{suffix}'}
+                for _, r in sorted_stats.iterrows()]
+
+    # ── Q1: THE CHAMPION ──
+    # Classic opener — who came out on top?
+    profit_ranked = stats.sort_values("Total Profit", ascending=False)
+    best = profit_ranked.iloc[0]
+    opts, ci = make_options(
+        best["Spiller"],
+        [p for p in PLAYER_ORDER if p != best["Spiller"]])
     questions.append({
-        "question": "Hvem endte med mest profit i 2025?",
+        "question": "Hvem blev årets Tipsklub-mester med mest profit?",
         "options": opts, "correct": ci,
         "reveal": f'{best["Spiller"]} med {best["Total Profit"]:+,.0f} kr',
         "chartId": "leaderboard",
+        "ranking": player_ranking("Total Profit"),
     })
 
-    # Q2: Highest win rate
-    wr_best = stats.loc[stats["Win Rate"].idxmax()]
-    others = [p for p in PLAYER_ORDER if p != wr_best["Spiller"]]
-    random.shuffle(others)
-    opts, ci = make_options(wr_best["Spiller"], others)
+    # ── Q2: THE BOTTOM ──
+    # Roast moment — who lost the most?
+    worst = profit_ranked.iloc[-1]
+    opts, ci = make_options(
+        worst["Spiller"],
+        [p for p in PLAYER_ORDER if p != worst["Spiller"]])
     questions.append({
-        "question": "Hvem havde den højeste win rate (vindende uger)?",
+        "question": "Hvem endte i bunden med størst tab?",
         "options": opts, "correct": ci,
-        "reveal": f'{wr_best["Spiller"]} med {wr_best["Win Rate"]:.1f}%',
+        "reveal": f'{worst["Spiller"]} med {worst["Total Profit"]:+,.0f} kr',
+        "chartId": "leaderboard",
+        "ranking": player_ranking("Total Profit"),
+    })
+
+    # ── Q3: WIN RATE ──
+    # Nixon's 77.8% is absurdly high — should be a surprise
+    wr_ranked = stats.sort_values("Win Rate", ascending=False)
+    wr_best = wr_ranked.iloc[0]
+    opts, ci = make_options(
+        wr_best["Spiller"],
+        [p for p in PLAYER_ORDER if p != wr_best["Spiller"]])
+    questions.append({
+        "question": "Hvem vandt flest af sine uger (højeste win rate)?",
+        "options": opts, "correct": ci,
+        "reveal": f'{wr_best["Spiller"]} med {wr_best["Win Rate"]:.0f}% '
+                  f'({wr_best["Winning Weeks"]:.0f} af {wr_best["Weeks"]:.0f} uger)',
         "chartId": "winrate",
+        "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
 
-    # Q3: Highest average odds
-    odds_high = stats.loc[stats["Avg Odds"].idxmax()]
-    others = [p for p in PLAYER_ORDER if p != odds_high["Spiller"]]
-    random.shuffle(others)
-    opts, ci = make_options(odds_high["Spiller"], others)
+    # ── Q4: BEST SINGLE WEEK ──
+    # Nikolaj's +590 kr week is the biggest hit
+    best_week_row = weekly.loc[weekly["Profit"].idxmax()]
+    best_week_player = best_week_row["Spiller"]
+    opts, ci = make_options(
+        best_week_player,
+        [p for p in PLAYER_ORDER if p != best_week_player])
+    best_weeks_ranked = []
+    for p in PLAYER_ORDER:
+        pw = weekly[weekly["Spiller"] == p]
+        bw = pw.loc[pw["Profit"].idxmax()]
+        best_weeks_ranked.append({"name": p, "value": f'{bw["Profit"]:+,.0f} kr'})
+    best_weeks_ranked.sort(key=lambda x: float(x["value"].replace(" kr", "").replace(",", "").replace("+", "")), reverse=True)
     questions.append({
-        "question": "Hvem havde de højeste gennemsnitlige odds?",
+        "question": "Hvem ramte den bedste enkeluge i hele 2025?",
         "options": opts, "correct": ci,
-        "reveal": f'{odds_high["Spiller"]} med gns. odds {odds_high["Avg Odds"]:.2f}',
-        "chartId": "odds",
+        "reveal": f'{best_week_player} med {best_week_row["Profit"]:+,.0f} kr '
+                  f'(uge {best_week_row["WeekKey"]})',
+        "chartId": "bigweeks",
+        "ranking": best_weeks_ranked,
     })
 
-    # Q4: Total club profit (numeric range options)
-    club_profit = round(stats["Total Profit"].sum(), 0)
-    correct_str = f'{club_profit:+,.0f} kr'
-    # Generate plausible wrong answers
-    offsets = [-2000, -800, +1500]
-    random.shuffle(offsets)
-    wrong = [f'{club_profit + o:+,.0f} kr' for o in offsets[:3]]
-    opts, ci = make_options(correct_str, wrong)
+    # ── Q5: MILDEST WORST WEEK ──
+    # 4 of 5 players hit -300 — so ask who got off lightest
+    worst_per_player = {}
+    for p in PLAYER_ORDER:
+        pw = weekly[weekly["Spiller"] == p]
+        worst_per_player[p] = pw["Profit"].min()
+    mildest_player = max(worst_per_player, key=worst_per_player.get)
+    worst_weeks_ranked = [
+        {"name": p, "value": f'{v:+,.0f} kr'}
+        for p, v in sorted(worst_per_player.items(), key=lambda x: x[1])]
+    opts, ci = make_options(
+        mildest_player,
+        [p for p in PLAYER_ORDER if p != mildest_player])
     questions.append({
-        "question": "Hvad var klubbens samlede profit i 2025?",
+        "question": "Hvem slap billigst i sin værste uge?",
         "options": opts, "correct": ci,
-        "reveal": f'Klubben endte på {correct_str}',
-        "chartId": "quickstats",
+        "reveal": f'{mildest_player} — værste uge var kun '
+                  f'{worst_per_player[mildest_player]:+,.0f} kr '
+                  f'(4 andre ramte {min(worst_per_player.values()):+,.0f})',
+        "chartId": "bigweeks",
+        "ranking": worst_weeks_ranked,
     })
 
-    # Q5: Best month for the club
-    monthly = weekly.copy()
-    month_totals = monthly.groupby("Month")["Profit"].sum()
-    best_month_num = int(month_totals.idxmax())
-    best_month_name = DANISH_MONTHS[best_month_num - 1]
-    all_months = [DANISH_MONTHS[int(m) - 1] for m in month_totals.index]
-    other_months = [m for m in all_months if m != best_month_name]
-    random.shuffle(other_months)
-    opts, ci = make_options(best_month_name, other_months[:3])
-    questions.append({
-        "question": "Hvilken måned var bedst for klubben?",
-        "options": opts, "correct": ci,
-        "reveal": f'{best_month_name} med {month_totals.max():+,.0f} kr profit',
-        "chartId": "monthly",
-    })
-
-    # Q6: Most bet-on league
+    # ── Q6: MOST PROFITABLE LEAGUE ──
+    # Surprise: Bundesliga (+784) beats everything despite fewer bets
     df_leagues = df_bets.copy()
     df_leagues["Liga"] = df_leagues["Liga"].fillna("").astype(str).str.split(",")
     df_leagues = df_leagues.explode("Liga")
     df_leagues["Liga"] = df_leagues["Liga"].str.strip()
     df_leagues = df_leagues[df_leagues["Liga"] != ""]
-    league_counts = df_leagues["Liga"].value_counts()
-    top_league = league_counts.index[0]
-    other_leagues = list(league_counts.index[1:4])
-    opts, ci = make_options(top_league, other_leagues)
+    league_stats = df_leagues.groupby("Liga").agg(
+        Bets=("Profit", "count"), Profit=("Profit", "sum"))
+    top5 = league_stats.sort_values("Bets", ascending=False).head(5)
+    most_profitable = top5.sort_values("Profit", ascending=False).iloc[0]
+    best_league = most_profitable.name
+    other_leagues = [l for l in top5.index if l != best_league]
+    random.shuffle(other_leagues)
+    opts, ci = make_options(best_league, other_leagues[:3])
+    league_ranking = [
+        {"name": l, "value": f'{r["Profit"]:+,.0f} kr ({r["Bets"]:.0f} bets)'}
+        for l, r in top5.sort_values("Profit", ascending=False).iterrows()]
     questions.append({
-        "question": "Hvilken liga spillede vi mest på?",
+        "question": "Hvilken af vores top-ligaer gav mest profit?",
         "options": opts, "correct": ci,
-        "reveal": f'{top_league} med {league_counts.iloc[0]} bets',
+        "reveal": f'{best_league} med {most_profitable["Profit"]:+,.0f} kr '
+                  f'på {most_profitable["Bets"]:.0f} bets',
         "chartId": "leagues",
+        "ranking": league_ranking,
     })
 
-    # Q7: Best single week
-    best_week_row = weekly.loc[weekly["Profit"].idxmax()]
-    best_week_player = best_week_row["Spiller"]
-    others = [p for p in PLAYER_ORDER if p != best_week_player]
-    random.shuffle(others)
-    opts, ci = make_options(best_week_player, others)
+    # ── Q7: BEST MONTH ──
+    month_totals = weekly.groupby("Month")["Profit"].sum()
+    best_month_num = int(month_totals.idxmax())
+    best_month_name = DANISH_MONTHS[best_month_num - 1]
+    all_month_names = [DANISH_MONTHS[int(m) - 1] for m in month_totals.index]
+    other_months = [m for m in all_month_names if m != best_month_name]
+    random.shuffle(other_months)
+    opts, ci = make_options(best_month_name, other_months[:3])
+    month_ranking = [
+        {"name": DANISH_MONTHS[int(m) - 1],
+         "value": f'{v:+,.0f} kr'}
+        for m, v in month_totals.sort_values(ascending=False).items()]
     questions.append({
-        "question": "Hvem havde den bedste enkeluge?",
+        "question": "Hvilken måned var bedst for klubben?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_week_player} med {best_week_row["Profit"]:+,.0f} kr',
-        "chartId": "bigweeks",
+        "reveal": f'{best_month_name} med {month_totals.max():+,.0f} kr profit',
+        "chartId": "monthly",
+        "ranking": month_ranking,
     })
 
-    # Q8: Longest winning streak
-    streak_best = stats.loc[stats["Win Streak"].idxmax()]
-    others = [p for p in PLAYER_ORDER if p != streak_best["Spiller"]]
-    random.shuffle(others)
-    opts, ci = make_options(streak_best["Spiller"], others)
+    # ── Q8: ROI KING — FINALE ──
+    # "Hvem fik mest ud af pengene" — ties the story together
+    roi_ranked = stats.sort_values("ROI", ascending=False)
+    roi_best = roi_ranked.iloc[0]
+    opts, ci = make_options(
+        roi_best["Spiller"],
+        [p for p in PLAYER_ORDER if p != roi_best["Spiller"]])
     questions.append({
-        "question": "Hvem havde den længste vindende stribe?",
+        "question": "Hvem fik mest valuta for pengene (bedste ROI)?",
         "options": opts, "correct": ci,
-        "reveal": f'{streak_best["Spiller"]} med {streak_best["Win Streak"]:.0f} uger i træk',
+        "reveal": f'{roi_best["Spiller"]} med {roi_best["ROI"]:+.1f}% afkast',
         "chartId": "cumulative",
+        "ranking": player_ranking("ROI", "+.1f", "%"),
     })
 
     return json.dumps(questions, ensure_ascii=False)
@@ -599,6 +649,15 @@ body {{
 .chart-container canvas {{ width:100%!important; }}
 .reveal-text {{ font-size:1rem; font-weight:600; color:#94a3b8; text-align:center; margin:8px 0; }}
 
+.ranking-list {{ width:100%; max-width:400px; margin:12px 0; }}
+.rank-row {{ display:flex; align-items:center; padding:8px 12px; margin:3px 0;
+             background:#1e293b; border-radius:8px; font-size:.9rem; }}
+.rank-row.gold {{ background:#fbbf2418; border:1px solid #fbbf2444; }}
+.rank-pos {{ width:24px; font-weight:900; color:#64748b; }}
+.rank-row.gold .rank-pos {{ color:#fbbf24; }}
+.rank-name {{ flex:1; font-weight:600; }}
+.rank-val {{ font-weight:700; color:#94a3b8; }}
+
 /* Quick stats reveal */
 .qs-grid {{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:400px; margin:16px 0; }}
 .qs-item {{ background:#1e293b; border-radius:12px; padding:16px; text-align:center; }}
@@ -691,6 +750,7 @@ body {{
     </div>
     <div style="margin-top:48px;width:100%;max-width:500px;display:flex;flex-direction:column;align-items:center;">
         <div class="reveal-text" id="revealText"></div>
+        <div class="ranking-list" id="rankingList"></div>
         <div class="chart-container" id="chartRevealContainer">
             <canvas id="chartReveal" height="200"></canvas>
         </div>
@@ -961,6 +1021,19 @@ function showRevealScreen(q) {{
     document.getElementById('statusRoom2').textContent = roomCode;
     document.getElementById('statusQ2').textContent = (currentQ + 1) + ' / ' + QUESTIONS.length;
     document.getElementById('revealText').textContent = q.reveal;
+
+    // Render ranking list
+    const rankEl = document.getElementById('rankingList');
+    if (q.ranking && q.ranking.length > 0) {{
+        rankEl.innerHTML = q.ranking.map((r, i) => {{
+            const cls = i === 0 ? 'rank-row gold' : 'rank-row';
+            const color = PLAYER_COLORS[r.name] || '';
+            const nameStyle = color ? ` style="color:${{color}}"` : '';
+            return `<div class="${{cls}}"><span class="rank-pos">${{i+1}}.</span><span class="rank-name"${{nameStyle}}>${{r.name}}</span><span class="rank-val">${{r.value}}</span></div>`;
+        }}).join('');
+    }} else {{
+        rankEl.innerHTML = '';
+    }}
 
     const chartContainer = document.getElementById('chartRevealContainer');
     const qsContainer = document.getElementById('quickStatsReveal');
