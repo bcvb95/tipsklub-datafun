@@ -901,13 +901,22 @@ function handleHostMessage(conn, data) {{
     }}
     if (data.type === 'answer') {{
         const p = players[conn.connectionId];
-        if (!p || p.answered) return;
+        if (!p) return;
+
+        // Remove previous vote if changing answer
+        if (p.answered) {{
+            Object.keys(votes).forEach(key => {{
+                votes[key] = votes[key].filter(n => n !== p.name);
+            }});
+            answerOrder = answerOrder.filter(id => id !== conn.connectionId);
+        }}
+
         p.answered = true;
         const optIdx = data.option;
         if (!votes[optIdx]) votes[optIdx] = [];
         votes[optIdx].push(p.name);
 
-        // Track correct answer order for speed bonus
+        // Track correct answer order for speed bonus (first correct stays first)
         const q = QUESTIONS[currentQ];
         if (optIdx === q.correct) {{
             answerOrder.push(conn.connectionId);
@@ -1374,14 +1383,13 @@ function handlePlayerMessage(data, myName) {{
 }}
 
 function playerAnswer(idx) {{
-    if (myAnswer !== -1) return; // Already answered
     myAnswer = idx;
 
-    // Highlight selected
-    document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+    // Highlight selected, keep all enabled for changing
+    document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('ansBtn' + idx).classList.add('selected');
 
-    // Send to host
+    // Send to host (host handles vote changes)
     hostConn.send({{ type: 'answer', option: idx }});
 }}
 
