@@ -372,7 +372,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
 
     # Helper: shuffle options, return (options_list, correct_index)
     def make_options(correct: str, wrong: list[str]) -> tuple[list[str], int]:
-        opts = [correct] + wrong[:3]
+        opts = [correct] + wrong
         random.shuffle(opts)
         return opts, opts.index(correct)
 
@@ -435,7 +435,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     all_months = [DANISH_MONTHS[int(m) - 1] for m in month_totals.index]
     other_months = [m for m in all_months if m != best_month_name]
     random.shuffle(other_months)
-    opts, ci = make_options(best_month_name, other_months)
+    opts, ci = make_options(best_month_name, other_months[:3])
     questions.append({
         "question": "Hvilken måned var bedst for klubben?",
         "options": opts, "correct": ci,
