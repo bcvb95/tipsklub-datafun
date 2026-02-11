@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tipsklub 2025 - Quiz</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+*{ margin:0; padding:0; box-sizing:border-box; }
+body {
+    background: #0f172a;
+    color: #f1f5f9;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    overflow-x: hidden;
+}
+.screen { display:none; min-height:100dvh; padding:20px; }
+.screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+/* Landing */
+.landing-title { font-size:2rem; font-weight:900; text-align:center; margin-bottom:8px; }
+.landing-sub { color:#94a3b8; text-align:center; margin-bottom:32px; }
+.btn { display:block; width:100%; max-width:320px; padding:16px; border:none; border-radius:12px;
+        font-family:inherit; font-size:1.1rem; font-weight:700; cursor:pointer;
+        transition:transform .1s, opacity .1s; margin:6px auto; }
+.btn:active { transform:scale(0.97); opacity:.9; }
+.btn-host { background:#2563eb; color:#fff; }
+.btn-join { background:#16a34a; color:#fff; }
+.btn-reveal { background:#d97706; color:#fff; }
+.btn-next { background:#2563eb; color:#fff; }
+.btn-disabled { background:#334155; color:#64748b; pointer-events:none; }
+
+/* Host lobby */
+.room-code { font-size:3rem; font-weight:900; letter-spacing:.3em; color:#2563eb;
+              background:#1e293b; border-radius:16px; padding:16px 32px; margin:16px 0; text-align:center; }
+#qrCanvas { margin:12px auto; display:block; border-radius:12px; background:#fff; padding:8px; }
+.player-list { width:100%; max-width:320px; margin:16px 0; }
+.player-chip { background:#1e293b; border-radius:8px; padding:10px 16px; margin:4px 0;
+                font-weight:600; display:flex; align-items:center; gap:8px; }
+.player-dot { width:10px; height:10px; border-radius:50%; }
+
+/* Join */
+.input { width:100%; max-width:320px; padding:14px 16px; border:2px solid #334155; border-radius:12px;
+          background:#1e293b; color:#f1f5f9; font-family:inherit; font-size:1rem; font-weight:600;
+          text-align:center; margin:6px auto; display:block; }
+.input::placeholder { color:#64748b; }
+.input:focus { outline:none; border-color:#2563eb; }
+.input.code { font-size:1.8rem; letter-spacing:.3em; text-transform:uppercase; }
+.waiting { color:#94a3b8; font-size:1rem; margin-top:16px; }
+.waiting .dot { animation:blink 1.4s infinite; }
+@keyframes blink { 0%,100%{ opacity:.2; } 50%{ opacity:1; } }
+
+/* Question (Host) */
+.q-num { font-size:.8rem; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; }
+.q-text { font-size:1.3rem; font-weight:700; text-align:center; margin-bottom:24px; line-height:1.4; }
+.host-options { width:100%; max-width:400px; }
+.host-opt { background:#1e293b; border-radius:10px; padding:12px 16px; margin:6px 0;
+             display:flex; justify-content:space-between; align-items:center; font-weight:600; }
+.host-opt .count { background:#334155; border-radius:6px; padding:4px 10px; font-size:.9rem; min-width:30px; text-align:center; }
+.host-opt.correct { background:#16a34a33; border:2px solid #16a34a; }
+.host-opt.wrong { background:#dc262633; border:2px solid #dc2626; opacity:.6; }
+.vote-names { font-size:.7rem; color:#94a3b8; margin-top:4px; }
+
+/* Question (Player) */
+.answer-btn { display:block; width:100%; max-width:400px; padding:18px 16px; margin:6px auto;
+               border:2px solid #334155; border-radius:12px; background:#1e293b; color:#f1f5f9;
+               font-family:inherit; font-size:1rem; font-weight:600; cursor:pointer;
+               transition:transform .1s, border-color .15s; }
+.answer-btn:active { transform:scale(0.97); }
+.answer-btn.selected { border-color:#2563eb; background:#2563eb22; }
+.answer-btn.correct-pick { border-color:#16a34a; background:#16a34a33; }
+.answer-btn.wrong-pick { border-color:#dc2626; background:#dc262633; }
+.answer-btn:disabled { cursor:default; opacity:.7; }
+
+/* Feedback */
+.feedback { font-size:1.5rem; font-weight:900; text-align:center; margin:16px 0; }
+.feedback.right { color:#16a34a; }
+.feedback.wrong { color:#dc2626; }
+.score-display { color:#94a3b8; font-size:1rem; text-align:center; }
+
+/* Chart reveal */
+.chart-container { width:100%; max-width:500px; background:#fff; border-radius:12px;
+                    padding:16px; margin:16px 0; }
+.chart-container canvas { width:100%!important; }
+.reveal-text { font-size:1rem; font-weight:600; color:#94a3b8; text-align:center; margin:8px 0; }
+
+/* Quick stats reveal */
+.qs-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:400px; margin:16px 0; }
+.qs-item { background:#1e293b; border-radius:12px; padding:16px; text-align:center; }
+.qs-item .val { font-size:1.4rem; font-weight:700; color:#2563eb; }
+.qs-item .lbl { font-size:.7rem; color:#64748b; text-transform:uppercase; margin-top:4px; }
+
+/* Scoreboard */
+.scoreboard { width:100%; max-width:400px; margin:16px 0; }
+.sb-row { display:flex; align-items:center; padding:14px 16px; margin:4px 0;
+           background:#1e293b; border-radius:10px; }
+.sb-rank { font-size:1.5rem; font-weight:900; width:36px; text-align:center; }
+.sb-rank.gold { color:#fbbf24; }
+.sb-rank.silver { color:#94a3b8; }
+.sb-rank.bronze { color:#cd7f32; }
+.sb-name { flex:1; font-weight:700; font-size:1.1rem; margin-left:12px; }
+.sb-score { font-weight:700; font-size:1.1rem; color:#2563eb; }
+.sb-correct { font-size:.75rem; color:#64748b; margin-left:4px; }
+
+/* Status bar */
+.status-bar { position:fixed; top:0; left:0; right:0; background:#1e293b; border-bottom:1px solid #334155;
+               padding:8px 16px; display:flex; justify-content:space-between; align-items:center;
+               font-size:.75rem; color:#94a3b8; z-index:100; }
+.status-bar .room { font-weight:700; color:#2563eb; }
+
+/* Error */
+.error { color:#dc2626; font-size:.85rem; text-align:center; margin:8px 0; }
+
+@media(max-width:400px) {
+    .landing-title { font-size:1.5rem; }
+    .q-text { font-size:1.1rem; }
+    .room-code { font-size:2.2rem; padding:12px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Screen: Landing -->
+<div id="screenLanding" class="screen active">
+    <div class="landing-title">Tipsklub 2025</div>
+    <div class="landing-sub">Interaktiv Quiz</div>
+    <button class="btn btn-host" onclick="startHost()">Vaert (Host)</button>
+    <button class="btn btn-join" onclick="showJoin()">Deltag (Join)</button>
+</div>
+
+<!-- Screen: Host Lobby -->
+<div id="screenHostLobby" class="screen">
+    <div class="q-num">Del denne kode</div>
+    <div class="room-code" id="roomCodeDisplay"></div>
+    <canvas id="qrCanvas" width="180" height="180"></canvas>
+    <div class="q-num" style="margin-top:12px;">Spillere</div>
+    <div class="player-list" id="playerList"></div>
+    <button class="btn btn-host" id="btnStartQuiz" onclick="hostStartQuiz()">Start Quiz</button>
+</div>
+
+<!-- Screen: Join -->
+<div id="screenJoin" class="screen">
+    <div class="q-text">Indtast kode</div>
+    <input class="input code" id="inputCode" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters">
+    <input class="input" id="inputName" placeholder="Dit navn" autocomplete="off">
+    <button class="btn btn-join" onclick="joinRoom()">Tilslut</button>
+    <div class="error" id="joinError"></div>
+</div>
+
+<!-- Screen: Player Waiting -->
+<div id="screenPlayerWait" class="screen">
+    <div class="q-text">Du er med!</div>
+    <div class="waiting">Venter på at quizzen starter<span class="dot">...</span></div>
+</div>
+
+<!-- Screen: Host Question -->
+<div id="screenHostQ" class="screen">
+    <div class="status-bar">
+        <span>Kode: <span class="room" id="statusRoom"></span></span>
+        <span id="statusQ"></span>
+    </div>
+    <div style="margin-top:48px;width:100%;max-width:500px;">
+        <div class="q-num" id="hostQNum"></div>
+        <div class="q-text" id="hostQText"></div>
+        <div class="host-options" id="hostOptions"></div>
+        <div style="text-align:center;margin-top:12px;color:#64748b;font-size:.85rem;" id="hostVoteCount"></div>
+        <button class="btn btn-reveal" id="btnReveal" onclick="hostReveal()" style="margin-top:16px;">Vis Svar</button>
+    </div>
+</div>
+
+<!-- Screen: Host Reveal -->
+<div id="screenHostReveal" class="screen">
+    <div class="status-bar">
+        <span>Kode: <span class="room" id="statusRoom2"></span></span>
+        <span id="statusQ2"></span>
+    </div>
+    <div style="margin-top:48px;width:100%;max-width:500px;display:flex;flex-direction:column;align-items:center;">
+        <div class="reveal-text" id="revealText"></div>
+        <div class="chart-container" id="chartRevealContainer">
+            <canvas id="chartReveal" height="200"></canvas>
+        </div>
+        <div class="qs-grid" id="quickStatsReveal" style="display:none;"></div>
+        <button class="btn btn-next" id="btnNext" onclick="hostNextQuestion()" style="margin-top:16px;">Naeste Spørgsmål</button>
+    </div>
+</div>
+
+<!-- Screen: Player Question -->
+<div id="screenPlayerQ" class="screen">
+    <div style="width:100%;max-width:400px;">
+        <div class="q-num" id="playerQNum"></div>
+        <div class="q-text" id="playerQText"></div>
+        <div id="playerOptions"></div>
+    </div>
+</div>
+
+<!-- Screen: Player Feedback -->
+<div id="screenPlayerFeedback" class="screen">
+    <div class="feedback" id="playerFeedback"></div>
+    <div class="score-display" id="playerScore"></div>
+    <div class="waiting" style="margin-top:24px;">Venter på naeste spørgsmål<span class="dot">...</span></div>
+</div>
+
+<!-- Screen: Final Scoreboard -->
+<div id="screenScoreboard" class="screen">
+    <div class="landing-title" style="margin-bottom:24px;">Resultater</div>
+    <div class="scoreboard" id="scoreboard"></div>
+    <button class="btn btn-host" onclick="location.reload()" style="margin-top:24px;">Spil Igen</button>
+</div>
+
+<script>
+// ── Data (embedded at build time) ──
+const QUESTIONS = [{"question": "Hvem endte med mest profit i 2025?", "options": ["Bjørn", "Jonas", "Gustav", "Nixon"], "correct": 3, "reveal": "Nixon med +655 kr", "chartId": "leaderboard"}, {"question": "Hvem havde den højeste win rate (vindende uger)?", "options": ["Bjørn", "Nixon", "Jonas", "Nikolaj"], "correct": 1, "reveal": "Nixon med 77.8%", "chartId": "winrate"}, {"question": "Hvem havde de højeste gennemsnitlige odds?", "options": ["Gustav", "Bjørn", "Nikolaj", "Nixon"], "correct": 0, "reveal": "Gustav med gns. odds 4.39", "chartId": "odds"}, {"question": "Hvad var klubbens samlede profit i 2025?", "options": ["-2,477 kr", "+1,023 kr", "-1,277 kr", "-477 kr"], "correct": 3, "reveal": "Klubben endte på -477 kr", "chartId": "quickstats"}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Nov", "Okt", "Aug", "Jan"], "correct": 2, "reveal": "Aug med +687 kr profit", "chartId": "monthly"}, {"question": "Hvilken liga spillede vi mest på?", "options": ["La Liga", "UEFA Champions League", "English Premier League", "Danish Superliga"], "correct": 2, "reveal": "English Premier League med 55 bets", "chartId": "leagues"}, {"question": "Hvem havde den bedste enkeluge?", "options": ["Nikolaj", "Jonas", "Bjørn", "Gustav"], "correct": 0, "reveal": "Nikolaj med +590 kr", "chartId": "bigweeks"}, {"question": "Hvem havde den længste vindende stribe?", "options": ["Jonas", "Gustav", "Bjørn", "Nikolaj"], "correct": 2, "reveal": "Bjørn med 4 uger i træk", "chartId": "cumulative"}];
+const CHART_DATA = {
+    cumulative: [{"label": "Bj\u00f8rn", "data": [{"x": "2025-01-08", "y": -175.0}, {"x": "2025-02-11", "y": -338.0}, {"x": "2025-03-20", "y": -522.0}, {"x": "2025-04-22", "y": -364.0}, {"x": "2025-05-31", "y": -164.0}, {"x": "2025-08-12", "y": -116.0}, {"x": "2025-09-22", "y": -89.0}, {"x": "2025-11-03", "y": -389.0}, {"x": "2025-12-18", "y": -442.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-01-21", "y": 175.0}, {"x": "2025-02-25", "y": 175.0}, {"x": "2025-04-01", "y": -125.0}, {"x": "2025-05-05", "y": -250.0}, {"x": "2025-05-31", "y": -300.0}, {"x": "2025-08-25", "y": 290.0}, {"x": "2025-10-17", "y": 279.0}, {"x": "2025-11-25", "y": 354.0}, {"x": "2025-12-29", "y": 254.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-02-03", "y": 72.0}, {"x": "2025-03-11", "y": -128.0}, {"x": "2025-04-15", "y": -60.0}, {"x": "2025-05-19", "y": 22.0}, {"x": "2025-05-31", "y": -28.0}, {"x": "2025-08-17", "y": 132.0}, {"x": "2025-09-16", "y": 506.0}, {"x": "2025-10-29", "y": 585.0}, {"x": "2025-12-09", "y": 655.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-01-14", "y": -165.0}, {"x": "2025-02-17", "y": -465.0}, {"x": "2025-03-24", "y": -114.0}, {"x": "2025-04-29", "y": -297.0}, {"x": "2025-05-31", "y": -347.0}, {"x": "2025-08-18", "y": -457.0}, {"x": "2025-09-30", "y": -407.0}, {"x": "2025-11-21", "y": -707.0}, {"x": "2025-12-22", "y": -267.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-01-29", "y": -65.0}, {"x": "2025-03-04", "y": -155.0}, {"x": "2025-04-12", "y": -455.0}, {"x": "2025-05-15", "y": -415.0}, {"x": "2025-05-31", "y": -465.0}, {"x": "2025-09-13", "y": -765.0}, {"x": "2025-10-21", "y": -763.0}, {"x": "2025-12-03", "y": -677.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}],
+    leaderboard: {"labels": ["Gustav", "Bj\u00f8rn", "Jonas", "Nikolaj", "Nixon"], "data": [-677.0, -442.0, -267.0, 254.0, 655.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#2563eb", "#16a34a"]},
+    winrate: {"labels": ["Nixon", "Bj\u00f8rn", "Gustav", "Nikolaj", "Jonas"], "data": [77.8, 44.4, 37.5, 33.3, 33.3], "colors": ["#16a34a", "#d97706", "#dc2626", "#2563eb", "#9333ea"], "weeks": [9, 9, 8, 9, 9], "winning": [7, 4, 3, 3, 3]},
+    monthly: {"labels": ["Jan", "Feb", "Mar", "Apr", "Maj", "Aug", "Sep", "Okt", "Nov", "Dec"], "datasets": [{"label": "Bj\u00f8rn", "data": [-175.0, -162.0, -185.0, 159.0, 200.0, 47.0, 28.0, 0.0, -300.0, -53.0], "backgroundColor": "#d97706"}, {"label": "Nikolaj", "data": [175.0, 0.0, 0.0, -300.0, -175.0, 590.0, 0.0, -11.0, 75.0, -100.0], "backgroundColor": "#2563eb"}, {"label": "Nixon", "data": [0.0, 72.0, -200.0, 68.0, 33.0, 159.0, 375.0, 79.0, 0.0, 70.0], "backgroundColor": "#16a34a"}, {"label": "Jonas", "data": [-165.0, -300.0, 350.0, -182.0, -50.0, -110.0, 50.0, 0.0, -300.0, 440.0], "backgroundColor": "#9333ea"}, {"label": "Gustav", "data": [-65.0, 0.0, -90.0, -300.0, -10.0, 0.0, -300.0, 2.0, 0.0, 86.0], "backgroundColor": "#dc2626"}]},
+    leagues: {"labels": ["UEFA Nations League", "UEFA Europa League", "Ligue 1", "EFL Championship", "Serie A", "Bundesliga", "La Liga", "Danish Superliga", "UEFA Champions League", "English Premier League"], "bets": [5, 5, 8, 10, 21, 22, 25, 28, 46, 55], "profit": [-185.0, 83.0, -122.0, 334.0, -338.0, 784.0, -683.0, 171.0, 47.0, -621.0], "colors": ["#dc2626", "#16a34a", "#dc2626", "#16a34a", "#dc2626", "#16a34a", "#dc2626", "#16a34a", "#16a34a", "#dc2626"]},
+    odds: [{"player": "Bj\u00f8rn", "odds": [2.24, 2.43, 2.4, 3.75, 2.5, 2.75, 2.37, 4.48, 1.65, 2.44, 3.0, 2.0, 2.3, 2.16, 2.0, 2.55, 0.0, 3.15, 4.09, 5.0, 2.59, 1.77, 3.45, 2.97, 2.9, 2.45, 2.6, 3.25, 2.88, 3.3, 2.82, 7.75, 2.85, 3.2, 3.2, 3.2, 2.53, 2.47], "avg": 2.88, "min": 0.0, "max": 7.75, "color": "#d97706"}, {"player": "Nikolaj", "odds": [4.0, 3.0, 5.9, 2.9, 3.6, 2.1, 4.0, 4.0, 5.63, 6.0, 2.98, 3.74, 4.0, 4.0, 3.0, 3.9, 4.2, 3.5, 3.5, 2.1, 5.5, 3.2, 4.28, 4.95, 4.18, 9.4, 1.7, 2.89, 3.1, 2.1, 2.55, 3.75, 2.6, 3.2, 3.2], "avg": 3.79, "min": 1.7, "max": 9.4, "color": "#2563eb"}, {"player": "Nixon", "odds": [1.9, 3.6, 4.0, 4.75, 1.83, 1.9, 3.4, 2.4, 2.01, 2.45, 2.48, 2.11, 3.4, 3.4, 2.59, 2.31, 2.7, 2.03, 2.05, 2.21, 2.4, 2.0, 2.59, 3.48, 9.08, 15.0, 2.35, 2.7, 3.3, 2.73, 4.45, 2.72, 3.7, 3.6], "avg": 3.34, "min": 1.83, "max": 15.0, "color": "#16a34a"}, {"player": "Jonas", "odds": [2.7, 2.1, 19.0, 2.8, 3.0, 1.65, 2.11, 2.15, 2.14, 0.0, 0.0, 0.0, 11.52, 2.2, 2.36, 2.32, 2.35, 3.35, 2.75, 3.36, 2.5, 2.35, 3.2, 3.5, 0.55, 2.4, 3.61, 3.25, 4.98, 3.11, 3.03, 7.0, 2.5, 3.04, 2.88, 4.48, 2.4, 3.65, 3.08, 3.75, 3.68], "avg": 3.34, "min": 0.0, "max": 19.0, "color": "#9333ea"}, {"player": "Gustav", "odds": [2.35, 3.25, 4.33, 4.93, 2.07, 3.6, 2.8, 2.88, 2.5, 2.04, 3.0, 3.06, 1.9, 1.85, 9.0, 2.5, 2.3, 15.0, 19.0, 2.9, 3.3, 3.02, 6.0, 4.0, 2.2, 2.7, 3.86, 2.02, 9.0], "avg": 4.39, "min": 1.85, "max": 19.0, "color": "#dc2626"}],
+    bigweeks: {"labels": ["Jonas (17/02)", "Nikolaj (01/04)", "Gustav (12/04)", "Gustav (13/09)", "Bj\u00f8rn (03/11)", "Nikolaj (25/08)", "Jonas (22/12)", "Nixon (16/09)", "Jonas (24/03)", "Bj\u00f8rn (31/05)"], "data": [-300.0, -300.0, -300.0, -300.0, -300.0, 590.0, 440.0, 375.0, 350.0, 200.0], "colors": ["#9333ea", "#2563eb", "#dc2626", "#dc2626", "#d97706", "#2563eb", "#9333ea", "#16a34a", "#9333ea", "#d97706"]},
+};
+const QUICK_STATS = {"weeks": 44, "bets": 177, "staked": 11400.0, "profit": -477.0};
+const PLAYER_COLORS = {"Bj\u00f8rn": "#d97706", "Nikolaj": "#2563eb", "Nixon": "#16a34a", "Jonas": "#9333ea", "Gustav": "#dc2626"};
+
+// ── QR Code (minimal inline generator) ──
+function drawQR(canvas, text) {
+    // Use a simple approach: encode URL as text pattern on canvas
+    // For production, we use a CDN-free minimal QR encoder
+    const size = 180;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Scan eller gaa til:', size/2, 40);
+    ctx.font = '11px Inter, sans-serif';
+    const urlLines = text.match(/.{1,28}/g) || [text];
+    urlLines.forEach((line, i) => {
+        ctx.fillText(line, size/2, 65 + i * 18);
+    });
+    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.fillText(roomCode, size/2, 150);
+}
+
+// ── State ──
+let mode = ''; // 'host' or 'player'
+let peer = null;
+let connections = []; // host: array of DataConnection
+let hostConn = null; // player: DataConnection to host
+let roomCode = '';
+let players = {}; // host: {connId: {name, score, answered, correct_count}}
+let currentQ = 0;
+let votes = {}; // host: {optionIndex: [playerNames]}
+let myAnswer = -1;
+let myScore = 0;
+let myCorrectCount = 0;
+let answerOrder = []; // host: tracks order of correct answers for speed bonus
+let revealChart = null;
+
+// ── Screen management ──
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ── HOST ──
+function startHost() {
+    mode = 'host';
+    roomCode = genCode();
+    document.getElementById('roomCodeDisplay').textContent = roomCode;
+    const peerId = 'tipsklub-' + roomCode.toLowerCase();
+
+    peer = new Peer(peerId, { debug: 0 });
+    peer.on('open', () => {
+        console.log('Host peer open:', peerId);
+        const url = location.href.split('?')[0] + '?room=' + roomCode;
+        drawQR(document.getElementById('qrCanvas'), url);
+        showScreen('screenHostLobby');
+    });
+    peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        if (err.type === 'unavailable-id') {
+            roomCode = genCode();
+            document.getElementById('roomCodeDisplay').textContent = roomCode;
+            peer.destroy();
+            startHost();
+        }
+    });
+    peer.on('connection', (conn) => {
+        conn.on('open', () => {
+            connections.push(conn);
+            conn.on('data', (data) => handleHostMessage(conn, data));
+            conn.on('close', () => {
+                connections = connections.filter(c => c !== conn);
+                delete players[conn.connectionId];
+                updatePlayerList();
+            });
+        });
+    });
+}
+
+function genCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+function handleHostMessage(conn, data) {
+    if (data.type === 'join') {
+        players[conn.connectionId] = { name: data.name, score: 0, answered: false, correct_count: 0 };
+        updatePlayerList();
+        conn.send({ type: 'joined', name: data.name });
+    }
+    if (data.type === 'answer') {
+        const p = players[conn.connectionId];
+        if (!p || p.answered) return;
+        p.answered = true;
+        const optIdx = data.option;
+        if (!votes[optIdx]) votes[optIdx] = [];
+        votes[optIdx].push(p.name);
+
+        // Track correct answer order for speed bonus
+        const q = QUESTIONS[currentQ];
+        if (optIdx === q.correct) {
+            answerOrder.push(conn.connectionId);
+        }
+
+        updateHostVotes();
+    }
+}
+
+function updatePlayerList() {
+    const list = document.getElementById('playerList');
+    const names = Object.values(players).map(p => p.name);
+    list.innerHTML = names.map(n => {
+        const color = PLAYER_COLORS[n] || '#2563eb';
+        return `<div class="player-chip"><div class="player-dot" style="background:${color}"></div>${n}</div>`;
+    }).join('');
+}
+
+function updateHostVotes() {
+    const q = QUESTIONS[currentQ];
+    const totalPlayers = Object.keys(players).length;
+    const totalVotes = Object.values(votes).reduce((s, arr) => s + arr.length, 0);
+
+    q.options.forEach((opt, i) => {
+        const count = (votes[i] || []).length;
+        const el = document.getElementById('hostOpt' + i);
+        if (el) {
+            el.querySelector('.count').textContent = count;
+        }
+    });
+    document.getElementById('hostVoteCount').textContent = totalVotes + ' / ' + totalPlayers + ' har svaret';
+}
+
+function hostStartQuiz() {
+    currentQ = 0;
+    hostSendQuestion();
+}
+
+function hostSendQuestion() {
+    const q = QUESTIONS[currentQ];
+    votes = {};
+    answerOrder = [];
+    Object.values(players).forEach(p => p.answered = false);
+
+    // Update host screen
+    document.getElementById('statusRoom').textContent = roomCode;
+    document.getElementById('statusQ').textContent = (currentQ + 1) + ' / ' + QUESTIONS.length;
+    document.getElementById('hostQNum').textContent = 'Spørgsmål ' + (currentQ + 1) + ' af ' + QUESTIONS.length;
+    document.getElementById('hostQText').textContent = q.question;
+
+    let optsHtml = '';
+    q.options.forEach((opt, i) => {
+        optsHtml += `<div class="host-opt" id="hostOpt${i}"><span>${opt}</span><span class="count">0</span></div>`;
+    });
+    document.getElementById('hostOptions').innerHTML = optsHtml;
+    document.getElementById('hostVoteCount').textContent = '0 / ' + Object.keys(players).length + ' har svaret';
+    document.getElementById('btnReveal').classList.remove('btn-disabled');
+
+    showScreen('screenHostQ');
+
+    // Send to players
+    const msg = { type: 'question', index: currentQ, question: q.question, options: q.options };
+    connections.forEach(c => c.send(msg));
+}
+
+function hostReveal() {
+    const q = QUESTIONS[currentQ];
+    document.getElementById('btnReveal').classList.add('btn-disabled');
+
+    // Highlight correct/wrong on host options
+    q.options.forEach((opt, i) => {
+        const el = document.getElementById('hostOpt' + i);
+        if (i === q.correct) {
+            el.classList.add('correct');
+            const names = votes[i] || [];
+            if (names.length > 0) {
+                el.innerHTML += `<div class="vote-names">${names.join(', ')}</div>`;
+            }
+        } else {
+            el.classList.add('wrong');
+        }
+    });
+
+    // Calculate scores
+    Object.entries(players).forEach(([connId, p]) => {
+        // Find which option this player voted for
+        let playerVote = -1;
+        Object.entries(votes).forEach(([optIdx, names]) => {
+            if (names.includes(p.name)) playerVote = parseInt(optIdx);
+        });
+        if (playerVote === q.correct) {
+            p.score += 100;
+            p.correct_count += 1;
+            // Speed bonus: first correct answer
+            if (answerOrder.length > 0 && answerOrder[0] === connId) {
+                p.score += 50;
+            }
+        }
+    });
+
+    // Send reveal to players
+    const scores = {};
+    Object.values(players).forEach(p => { scores[p.name] = p.score; });
+    const msg = { type: 'reveal', correct: q.correct, reveal: q.reveal, scores };
+    connections.forEach(c => c.send(msg));
+
+    // Show reveal screen with chart after a short delay
+    setTimeout(() => {
+        showRevealScreen(q);
+    }, 1500);
+}
+
+function showRevealScreen(q) {
+    document.getElementById('statusRoom2').textContent = roomCode;
+    document.getElementById('statusQ2').textContent = (currentQ + 1) + ' / ' + QUESTIONS.length;
+    document.getElementById('revealText').textContent = q.reveal;
+
+    const chartContainer = document.getElementById('chartRevealContainer');
+    const qsContainer = document.getElementById('quickStatsReveal');
+
+    // Destroy previous chart
+    if (revealChart) { revealChart.destroy(); revealChart = null; }
+
+    if (q.chartId === 'quickstats') {
+        chartContainer.style.display = 'none';
+        qsContainer.style.display = 'grid';
+        const qs = QUICK_STATS;
+        const profitColor = qs.profit >= 0 ? '#16a34a' : '#dc2626';
+        qsContainer.innerHTML = `
+            <div class="qs-item"><div class="val">${qs.weeks}</div><div class="lbl">Uger spillet</div></div>
+            <div class="qs-item"><div class="val">${qs.bets}</div><div class="lbl">Bets i alt</div></div>
+            <div class="qs-item"><div class="val">${qs.staked.toLocaleString('da-DK')}</div><div class="lbl">Satset (kr)</div></div>
+            <div class="qs-item"><div class="val" style="color:${profitColor}">${qs.profit >= 0 ? '+' : ''}${qs.profit.toLocaleString('da-DK')}</div><div class="lbl">Klub Profit</div></div>
+        `;
+    } else {
+        chartContainer.style.display = 'block';
+        qsContainer.style.display = 'none';
+
+        // Replace canvas (Chart.js reuse quirk)
+        const oldCanvas = document.getElementById('chartReveal');
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = 'chartReveal';
+        newCanvas.height = 200;
+        oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+        revealChart = renderChart(newCanvas, q.chartId);
+    }
+
+    // Button text
+    const btnNext = document.getElementById('btnNext');
+    if (currentQ >= QUESTIONS.length - 1) {
+        btnNext.textContent = 'Vis Scoreboard';
+    } else {
+        btnNext.textContent = 'Naeste Spørgsmål';
+    }
+
+    showScreen('screenHostReveal');
+}
+
+function renderChart(canvas, chartId) {
+    const ctx = canvas;
+    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+    Chart.defaults.color = '#475569';
+
+    if (chartId === 'leaderboard') {
+        const d = CHART_DATA.leaderboard;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }] },
+            options: { indexAxis:'y', responsive:true,
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' } } },
+                scales:{ x:{ grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v+' kr' } }, y:{ grid:{ display:false } } }
+            }
+        });
+    }
+    if (chartId === 'winrate') {
+        const d = CHART_DATA.winrate;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }] },
+            options: { responsive:true,
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: (c) => {
+                    const idx=c.dataIndex; return c.parsed.y+'% ('+d.winning[idx]+'/'+d.weeks[idx]+' uger)';
+                } } } },
+                scales:{ y:{ max:100, grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v+'%' } }, x:{ grid:{ display:false } } }
+            }
+        });
+    }
+    if (chartId === 'odds') {
+        const d = CHART_DATA.odds;
+        const labels = d.map(p=>p.player);
+        const avgs = d.map(p=>p.avg);
+        const colors = d.map(p=>p.color);
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label:'Gns.', data:avgs, backgroundColor:colors, borderRadius:4 }] },
+            options: { responsive:true,
+                scales:{ y:{ grid:{ color:'#f1f5f9' }, title:{ display:true, text:'Odds' } }, x:{ grid:{ display:false } } },
+                plugins:{ legend:{ display:false } }
+            }
+        });
+    }
+    if (chartId === 'monthly') {
+        const d = CHART_DATA.monthly;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: d.labels, datasets: d.datasets.map(ds => ({ ...ds, borderRadius: 2 })) },
+            options: { responsive:true,
+                plugins:{ tooltip:{ callbacks:{ label: c => c.dataset.label+': '+c.parsed.y.toLocaleString('da-DK')+' kr' } } },
+                scales:{ y:{ grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v+' kr' } }, x:{ grid:{ display:false } } }
+            }
+        });
+    }
+    if (chartId === 'leagues') {
+        const d = CHART_DATA.leagues;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ data: d.bets, backgroundColor: d.colors, borderRadius: 4 }] },
+            options: { indexAxis:'y', responsive:true,
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => {
+                    const idx=c.dataIndex; return c.parsed.x+' bets | '+d.profit[idx].toLocaleString('da-DK')+' kr profit';
+                } } } },
+                scales:{ x:{ grid:{ color:'#f1f5f9' }, title:{ display:true, text:'Antal bets' } }, y:{ grid:{ display:false } } }
+            }
+        });
+    }
+    if (chartId === 'bigweeks') {
+        const d = CHART_DATA.bigweeks;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }] },
+            options: { indexAxis:'y', responsive:true,
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' } } },
+                scales:{ x:{ grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v+' kr' } }, y:{ grid:{ display:false } } }
+            }
+        });
+    }
+    if (chartId === 'cumulative') {
+        const datasets = CHART_DATA.cumulative;
+        return new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: { responsive:true, interaction:{ mode:'index', intersect:false },
+                scales: {
+                    x: { type:'time', time:{ unit:'month', displayFormats:{ month:'MMM' } }, grid:{ color:'#f1f5f9' } },
+                    y: { grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v+' kr' } }
+                },
+                plugins:{ tooltip:{ callbacks:{ label: c => c.dataset.label+': '+c.parsed.y.toLocaleString('da-DK')+' kr' } } }
+            }
+        });
+    }
+    return null;
+}
+
+function hostNextQuestion() {
+    currentQ++;
+    if (currentQ >= QUESTIONS.length) {
+        showFinalScoreboard();
+    } else {
+        hostSendQuestion();
+    }
+}
+
+function showFinalScoreboard() {
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    const rankIcons = ['gold', 'silver', 'bronze'];
+    const rankEmoji = ['1', '2', '3'];
+
+    let html = '';
+    sorted.forEach((p, i) => {
+        const rankClass = i < 3 ? rankIcons[i] : '';
+        const rank = i < 3 ? rankEmoji[i] : (i + 1);
+        const color = PLAYER_COLORS[p.name] || '#2563eb';
+        html += `<div class="sb-row">
+            <div class="sb-rank ${rankClass}">${rank}</div>
+            <div class="sb-name" style="color:${color}">${p.name}</div>
+            <div><span class="sb-score">${p.score} pts</span><span class="sb-correct">${p.correct_count}/${QUESTIONS.length}</span></div>
+        </div>`;
+    });
+    document.getElementById('scoreboard').innerHTML = html;
+
+    // Send to players
+    const scoresArr = sorted.map(p => ({ name: p.name, score: p.score, correct: p.correct_count }));
+    connections.forEach(c => c.send({ type: 'scoreboard', scores: scoresArr }));
+
+    showScreen('screenScoreboard');
+}
+
+// ── PLAYER ──
+function showJoin() {
+    // Check URL params for pre-filled room code
+    const params = new URLSearchParams(location.search);
+    const urlRoom = params.get('room');
+    if (urlRoom) {
+        document.getElementById('inputCode').value = urlRoom.toUpperCase();
+    }
+    showScreen('screenJoin');
+}
+
+function joinRoom() {
+    const code = document.getElementById('inputCode').value.trim().toUpperCase();
+    const name = document.getElementById('inputName').value.trim();
+    const errEl = document.getElementById('joinError');
+
+    if (!code || code.length !== 4) { errEl.textContent = 'Indtast en 4-bogstavs kode'; return; }
+    if (!name) { errEl.textContent = 'Indtast dit navn'; return; }
+    errEl.textContent = '';
+
+    mode = 'player';
+    roomCode = code;
+    const peerId = 'tipsklub-' + code.toLowerCase();
+
+    peer = new Peer({ debug: 0 });
+    peer.on('open', () => {
+        hostConn = peer.connect(peerId, { reliable: true });
+        hostConn.on('open', () => {
+            hostConn.send({ type: 'join', name });
+            hostConn.on('data', (data) => handlePlayerMessage(data, name));
+        });
+        hostConn.on('error', (err) => {
+            errEl.textContent = 'Kunne ikke forbinde. Tjek koden.';
+            console.error('Connection error:', err);
+        });
+    });
+    peer.on('error', (err) => {
+        errEl.textContent = 'Forbindelsesfejl: ' + err.type;
+        console.error('Peer error:', err);
+    });
+
+    // Timeout for connection
+    setTimeout(() => {
+        if (!hostConn || !hostConn.open) {
+            errEl.textContent = 'Timeout. Tjek koden og prøv igen.';
+        }
+    }, 8000);
+}
+
+function handlePlayerMessage(data, myName) {
+    if (data.type === 'joined') {
+        showScreen('screenPlayerWait');
+    }
+    if (data.type === 'question') {
+        myAnswer = -1;
+        document.getElementById('playerQNum').textContent = 'Spørgsmål ' + (data.index + 1) + ' af ' + QUESTIONS.length;
+        document.getElementById('playerQText').textContent = data.question;
+        let html = '';
+        data.options.forEach((opt, i) => {
+            html += `<button class="answer-btn" id="ansBtn${i}" onclick="playerAnswer(${i})">${opt}</button>`;
+        });
+        document.getElementById('playerOptions').innerHTML = html;
+        showScreen('screenPlayerQ');
+    }
+    if (data.type === 'reveal') {
+        const q = data;
+        // Show feedback
+        const wasCorrect = myAnswer === q.correct;
+        const fb = document.getElementById('playerFeedback');
+        if (myAnswer === -1) {
+            fb.textContent = 'Ikke svaret!';
+            fb.className = 'feedback wrong';
+        } else if (wasCorrect) {
+            fb.textContent = 'Rigtigt!';
+            fb.className = 'feedback right';
+        } else {
+            fb.textContent = 'Forkert!';
+            fb.className = 'feedback wrong';
+        }
+
+        // Highlight answers
+        if (myAnswer >= 0) {
+            const myBtn = document.getElementById('ansBtn' + myAnswer);
+            if (myBtn) {
+                myBtn.classList.add(wasCorrect ? 'correct-pick' : 'wrong-pick');
+            }
+        }
+
+        myScore = q.scores[myName] || 0;
+        myCorrectCount = wasCorrect ? (myCorrectCount + 1) : myCorrectCount;
+        document.getElementById('playerScore').textContent = myScore + ' point';
+
+        showScreen('screenPlayerFeedback');
+    }
+    if (data.type === 'scoreboard') {
+        const sorted = data.scores;
+        const rankIcons = ['gold', 'silver', 'bronze'];
+        const rankEmoji = ['1', '2', '3'];
+        let html = '';
+        sorted.forEach((p, i) => {
+            const rankClass = i < 3 ? rankIcons[i] : '';
+            const rank = i < 3 ? rankEmoji[i] : (i + 1);
+            const color = PLAYER_COLORS[p.name] || '#2563eb';
+            const highlight = p.name === myName ? 'border:2px solid #2563eb;' : '';
+            html += `<div class="sb-row" style="${highlight}">
+                <div class="sb-rank ${rankClass}">${rank}</div>
+                <div class="sb-name" style="color:${color}">${p.name}</div>
+                <div><span class="sb-score">${p.score} pts</span><span class="sb-correct">${p.correct}/${QUESTIONS.length}</span></div>
+            </div>`;
+        });
+        document.getElementById('scoreboard').innerHTML = html;
+        showScreen('screenScoreboard');
+    }
+}
+
+function playerAnswer(idx) {
+    if (myAnswer !== -1) return; // Already answered
+    myAnswer = idx;
+
+    // Highlight selected
+    document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+    document.getElementById('ansBtn' + idx).classList.add('selected');
+
+    // Send to host
+    hostConn.send({ type: 'answer', option: idx });
+}
+
+// ── Auto-join from URL param ──
+(function() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('room')) {
+        setTimeout(() => showJoin(), 100);
+    }
+})();
+
+let myName = '';
+</script>
+</body>
+</html>
