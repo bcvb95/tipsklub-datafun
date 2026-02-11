@@ -675,6 +675,9 @@ body {{
 .sb-name {{ flex:1; font-weight:700; font-size:1.1rem; margin-left:12px; }}
 .sb-score {{ font-weight:700; font-size:1.1rem; color:#2563eb; }}
 .sb-correct {{ font-size:.75rem; color:#64748b; margin-left:4px; }}
+.sb-answers {{ background:#1e293b; border-radius:0 0 10px 10px; margin:-4px 0 4px; padding:4px 12px 8px; }}
+.sb-answer {{ font-size:.8rem; padding:3px 0; color:#94a3b8; }}
+.sb-aq {{ color:#64748b; font-weight:600; margin:0 4px; }}
 
 /* Status bar */
 .status-bar {{ position:fixed; top:0; left:0; right:0; background:#1e293b; border-bottom:1px solid #334155;
@@ -892,7 +895,7 @@ function genCode() {{
 
 function handleHostMessage(conn, data) {{
     if (data.type === 'join') {{
-        players[conn.connectionId] = {{ name: data.name, score: 0, answered: false, correct_count: 0 }};
+        players[conn.connectionId] = {{ name: data.name, score: 0, answered: false, correct_count: 0, answers: [] }};
         updatePlayerList();
         conn.send({{ type: 'joined', name: data.name }});
     }}
@@ -974,31 +977,28 @@ function hostReveal() {{
     const q = QUESTIONS[currentQ];
     document.getElementById('btnReveal').classList.add('btn-disabled');
 
-    // Highlight correct/wrong on host options
+    // Highlight correct/wrong on host options (no names shown live)
     q.options.forEach((opt, i) => {{
         const el = document.getElementById('hostOpt' + i);
-        if (i === q.correct) {{
-            el.classList.add('correct');
-            const names = votes[i] || [];
-            if (names.length > 0) {{
-                el.innerHTML += `<div class="vote-names">${{names.join(', ')}}</div>`;
-            }}
-        }} else {{
-            el.classList.add('wrong');
-        }}
+        el.classList.add(i === q.correct ? 'correct' : 'wrong');
     }});
 
-    // Calculate scores
+    // Calculate scores and record answers
     Object.entries(players).forEach(([connId, p]) => {{
-        // Find which option this player voted for
         let playerVote = -1;
         Object.entries(votes).forEach(([optIdx, names]) => {{
             if (names.includes(p.name)) playerVote = parseInt(optIdx);
         }});
-        if (playerVote === q.correct) {{
+        const wasCorrect = playerVote === q.correct;
+        p.answers.push({{
+            question: q.question,
+            picked: playerVote >= 0 ? q.options[playerVote] : '—',
+            correct: q.options[q.correct],
+            right: wasCorrect,
+        }});
+        if (wasCorrect) {{
             p.score += 100;
             p.correct_count += 1;
-            // Speed bonus: first correct answer
             if (answerOrder.length > 0 && answerOrder[0] === connId) {{
                 p.score += 50;
             }}
@@ -1191,16 +1191,25 @@ function showFinalScoreboard() {{
         const rankClass = i < 3 ? rankIcons[i] : '';
         const rank = i < 3 ? rankEmoji[i] : (i + 1);
         const color = PLAYER_COLORS[p.name] || '#2563eb';
-        html += `<div class="sb-row">
+        const pid = 'answers-' + i;
+        html += `<div class="sb-row" onclick="document.getElementById('${{pid}}').style.display=document.getElementById('${{pid}}').style.display==='none'?'block':'none'" style="cursor:pointer;">
             <div class="sb-rank ${{rankClass}}">${{rank}}</div>
             <div class="sb-name" style="color:${{color}}">${{p.name}}</div>
             <div><span class="sb-score">${{p.score}} pts</span><span class="sb-correct">${{p.correct_count}}/${{QUESTIONS.length}}</span></div>
-        </div>`;
+        </div>
+        <div id="${{pid}}" class="sb-answers" style="display:none;">`;
+        if (p.answers) {{
+            p.answers.forEach((a, qi) => {{
+                const icon = a.right ? '<span style="color:#16a34a">&#10003;</span>' : '<span style="color:#dc2626">&#10007;</span>';
+                html += `<div class="sb-answer">${{icon}} <span class="sb-aq">Q${{qi+1}}</span> ${{a.picked}}</div>`;
+            }});
+        }}
+        html += `</div>`;
     }});
     document.getElementById('scoreboard').innerHTML = html;
 
-    // Send to players
-    const scoresArr = sorted.map(p => ({{ name: p.name, score: p.score, correct: p.correct_count }}));
+    // Send to players (include answers for their own view)
+    const scoresArr = sorted.map(p => ({{ name: p.name, score: p.score, correct: p.correct_count, answers: p.answers }}));
     connections.forEach(c => c.send({{ type: 'scoreboard', scores: scoresArr }}));
 
     showScreen('screenScoreboard');
@@ -1334,11 +1343,20 @@ function handlePlayerMessage(data, myName) {{
             const rank = i < 3 ? rankEmoji[i] : (i + 1);
             const color = PLAYER_COLORS[p.name] || '#2563eb';
             const highlight = p.name === myName ? 'border:2px solid #2563eb;' : '';
-            html += `<div class="sb-row" style="${{highlight}}">
+            const pid = 'p-answers-' + i;
+            html += `<div class="sb-row" style="${{highlight}}cursor:pointer;" onclick="document.getElementById('${{pid}}').style.display=document.getElementById('${{pid}}').style.display==='none'?'block':'none'">
                 <div class="sb-rank ${{rankClass}}">${{rank}}</div>
                 <div class="sb-name" style="color:${{color}}">${{p.name}}</div>
                 <div><span class="sb-score">${{p.score}} pts</span><span class="sb-correct">${{p.correct}}/${{QUESTIONS.length}}</span></div>
-            </div>`;
+            </div>
+            <div id="${{pid}}" class="sb-answers" style="display:none;">`;
+            if (p.answers) {{
+                p.answers.forEach((a, qi) => {{
+                    const icon = a.right ? '<span style="color:#16a34a">&#10003;</span>' : '<span style="color:#dc2626">&#10007;</span>';
+                    html += `<div class="sb-answer">${{icon}} <span class="sb-aq">Q${{qi+1}}</span> ${{a.picked}}</div>`;
+                }});
+            }}
+            html += `</div>`;
         }});
         document.getElementById('scoreboard').innerHTML = html;
         showScreen('screenScoreboard');
