@@ -73,7 +73,7 @@ def fetch_data() -> pd.DataFrame:
     if "Dato" in df.columns:
         df["Dato"] = pd.to_datetime(df["Dato"], format="%d/%m/%Y", errors="coerce")
 
-    df = df[df["Dato"].dt.year == 2025].copy()
+    df = df[df["Dato"] >= "2025-04-14"].copy()
     df = df.sort_values("Dato").reset_index(drop=True)
 
     print(f"  2025 rows: {len(df)}")
@@ -303,6 +303,31 @@ def chart8_best_worst_data(weekly: pd.DataFrame) -> str:
     })
 
 
+def chart_weekday_totals(df_bets: pd.DataFrame) -> str:
+    """Total bets per weekday — simple bar chart."""
+    df = df_bets.copy()
+    df["Weekday"] = df["Dato"].dt.dayofweek
+    counts = df.groupby("Weekday").size()
+    profits = df.groupby("Weekday")["Profit"].sum()
+    labels = [DANISH_WEEKDAYS[d] for d in range(7)]
+    return json.dumps({
+        "labels": labels,
+        "data": [int(counts.get(d, 0)) for d in range(7)],
+        "profit": [round(float(profits.get(d, 0)), 0) for d in range(7)],
+    })
+
+
+def chart_bets_per_player(stats: pd.DataFrame) -> str:
+    """Bets per player — horizontal bar chart."""
+    sorted_stats = stats.sort_values("Bets", ascending=True)
+    return json.dumps({
+        "labels": sorted_stats["Spiller"].tolist(),
+        "data": sorted_stats["Bets"].tolist(),
+        "colors": [PLAYER_COLORS[p] for p in sorted_stats["Spiller"]],
+    })
+
+
+
 # ── 4. Award Cards ──────────────────────────────────────────────────────────
 
 def generate_award_cards(stats: pd.DataFrame, weekly: pd.DataFrame) -> str:
@@ -427,7 +452,40 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": month_ranking,
     })
 
-    # ── Q3: THE BOTTOM (roast — different player from Q1) ──
+    # ── Q3: ODDS JUNKIE (highest avg odds) ──
+    odds_best = stats.loc[stats["Avg Odds"].idxmax()]
+    opts, ci = make_options(
+        odds_best["Spiller"],
+        [p for p in PLAYER_ORDER if p != odds_best["Spiller"]])
+    questions.append({
+        "question": "Hvem er den største Odds-Junkie? (højeste gns. odds)",
+        "options": opts, "correct": ci,
+        "reveal": f'{odds_best["Spiller"]} med gns. odds {odds_best["Avg Odds"]:.2f}',
+        "chartId": "odds",
+        "ranking": player_ranking("Avg Odds", ".2f", ""),
+    })
+
+    # ── Q4: MOST POPULAR WEEKDAY (non-player, uses weekday data) ──
+    df_wd = df_bets.copy()
+    df_wd["Weekday"] = df_wd["Dato"].dt.dayofweek
+    wd_counts = df_wd["Weekday"].value_counts()
+    best_wd = int(wd_counts.idxmax())
+    best_wd_name = DANISH_WEEKDAYS[best_wd]
+    other_wds = [DANISH_WEEKDAYS[d] for d in range(7) if d != best_wd]
+    random.shuffle(other_wds)
+    opts, ci = make_options(best_wd_name, other_wds[:3])
+    wd_ranking = [
+        {"name": DANISH_WEEKDAYS[int(d)], "value": f'{int(c)} bets'}
+        for d, c in wd_counts.sort_values(ascending=False).items()]
+    questions.append({
+        "question": "Hvilken ugedag blev der spillet mest på?",
+        "options": opts, "correct": ci,
+        "reveal": f'{best_wd_name} med {int(wd_counts.max())} bets',
+        "chartId": "weekdayTotal",
+        "ranking": wd_ranking,
+    })
+
+    # ── Q5: THE BOTTOM (roast — different player from Q1) ──
     worst = profit_ranked.iloc[-1]
     opts, ci = make_options(
         worst["Spiller"],
@@ -440,7 +498,20 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": player_ranking("Total Profit"),
     })
 
-    # ── Q4: MOST PROFITABLE LEAGUE (non-player, surprise) ──
+    # ── Q6: MOST BETS (who placed the most individual bets) ──
+    bets_best = stats.loc[stats["Bets"].idxmax()]
+    opts, ci = make_options(
+        bets_best["Spiller"],
+        [p for p in PLAYER_ORDER if p != bets_best["Spiller"]])
+    questions.append({
+        "question": "Hvem lavede flest individuelle bets?",
+        "options": opts, "correct": ci,
+        "reveal": f'{bets_best["Spiller"]} med {bets_best["Bets"]:.0f} bets',
+        "chartId": "betsPerPlayer",
+        "ranking": player_ranking("Bets", ",.0f", " bets"),
+    })
+
+    # ── Q7: MOST PROFITABLE LEAGUE (non-player, surprise) ──
     df_leagues = df_bets.copy()
     df_leagues["Liga"] = df_leagues["Liga"].fillna("").astype(str).str.split(",")
     df_leagues = df_leagues.explode("Liga")
@@ -466,7 +537,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": league_ranking,
     })
 
-    # ── Q5: WIN RATE (first question with the overall champ as answer) ──
+    # ── Q8: WIN RATE (first question with the overall champ as answer) ──
     wr_ranked = stats.sort_values("Win Rate", ascending=False)
     wr_best = wr_ranked.iloc[0]
     opts, ci = make_options(
@@ -481,10 +552,9 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
 
-    # ── Q6: CLUB TOTAL PROFIT (number question — twist: it's negative!) ──
+    # ── Q9: CLUB TOTAL PROFIT (number question — twist: it's negative!) ──
     club_profit = stats["Total Profit"].sum()
     correct_str = f'{club_profit:+,.0f} kr'
-    # Generate plausible wrong answers spread around the real value
     wrong_amounts = []
     for offset in [800, -600, 1500]:
         wrong_amounts.append(f'{club_profit + offset:+,.0f} kr')
@@ -497,7 +567,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": player_ranking("Total Profit"),
     })
 
-    # ── Q7: MILDEST WORST WEEK (different angle — not obvious from Q5) ──
+    # ── Q10: MILDEST WORST WEEK ──
     worst_per_player = {}
     for p in PLAYER_ORDER:
         pw = weekly[weekly["Spiller"] == p]
@@ -519,7 +589,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": worst_weeks_ranked,
     })
 
-    # ── Q8: THE CHAMPION — GRAND FINALE ──
+    # ── Q11: THE CHAMPION — GRAND FINALE ──
     best = profit_ranked.iloc[0]
     opts, ci = make_options(
         best["Spiller"],
@@ -861,6 +931,8 @@ const CHART_DATA = {{
     leagues: {chart_data['leagues']},
     odds: {chart_data['odds']},
     bigweeks: {chart_data['bigweeks']},
+    weekdayTotal: {chart_data['weekdayTotal']},
+    betsPerPlayer: {chart_data['betsPerPlayer']},
 }};
 const QUICK_STATS = {quick_stats_json};
 const PLAYER_COLORS = {json.dumps(PLAYER_COLORS)};
@@ -1445,6 +1517,34 @@ function renderChart(canvas, chartId) {{
             options: {{ indexAxis:'y', responsive:true,
                 plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x.toLocaleString('da-DK')+' kr' }} }} }},
                 scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, ticks:{{ callback: v=>v+' kr' }} }}, y:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'weekdayTotal') {{
+        const d = CHART_DATA.weekdayTotal;
+        const colors = d.data.map((v, i) => {{
+            const maxVal = Math.max(...d.data);
+            return v === maxVal ? '#2563eb' : '#94a3b8';
+        }});
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: colors, borderRadius: 4 }}] }},
+            options: {{ responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => {{
+                    const idx=c.dataIndex; return c.parsed.y+' bets | '+d.profit[idx].toLocaleString('da-DK')+' kr profit';
+                }} }} }} }},
+                scales:{{ y:{{ grid:{{ color:'#f1f5f9' }}, title:{{ display:true, text:'Antal bets' }} }}, x:{{ grid:{{ display:false }} }} }}
+            }}
+        }});
+    }}
+    if (chartId === 'betsPerPlayer') {{
+        const d = CHART_DATA.betsPerPlayer;
+        return new Chart(ctx, {{
+            type: 'bar',
+            data: {{ labels: d.labels, datasets: [{{ data: d.data, backgroundColor: d.colors, borderRadius: 4 }}] }},
+            options: {{ indexAxis:'y', responsive:true,
+                plugins:{{ legend:{{ display:false }}, tooltip:{{ callbacks:{{ label: c => c.parsed.x+' bets' }} }} }},
+                scales:{{ x:{{ grid:{{ color:'#f1f5f9' }}, title:{{ display:true, text:'Antal bets' }} }}, y:{{ grid:{{ display:false }} }} }}
             }}
         }});
     }}
@@ -2173,6 +2273,8 @@ def main():
         "odds": chart6_odds_data(df_bets),
         "weekday": chart7_weekday_data(df_bets),
         "bigweeks": chart8_best_worst_data(weekly),
+        "weekdayTotal": chart_weekday_totals(df_bets),
+        "betsPerPlayer": chart_bets_per_player(stats),
     }
 
     print("Generating award cards...")
