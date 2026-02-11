@@ -618,7 +618,7 @@ body {{
 /* Question (Host) */
 .q-num {{ font-size:.8rem; color:#64748b; text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; }}
 .q-text {{ font-size:1.3rem; font-weight:700; text-align:center; margin-bottom:24px; line-height:1.4; }}
-.host-options {{ width:100%; max-width:400px; }}
+.host-options {{ width:100%; max-width:500px; }}
 .host-opt {{ background:#1e293b; border-radius:10px; padding:12px 16px; margin:6px 0;
              display:flex; justify-content:space-between; align-items:center; font-weight:600; }}
 .host-opt .count {{ background:#334155; border-radius:6px; padding:4px 10px; font-size:.9rem; min-width:30px; text-align:center; }}
@@ -733,7 +733,7 @@ body {{
         <span>Kode: <span class="room" id="statusRoom"></span></span>
         <span id="statusQ"></span>
     </div>
-    <div style="margin-top:48px;width:100%;max-width:500px;">
+    <div style="margin-top:48px;width:100%;max-width:500px;display:flex;flex-direction:column;align-items:center;">
         <div class="q-num" id="hostQNum"></div>
         <div class="q-text" id="hostQText"></div>
         <div class="host-options" id="hostOptions"></div>
