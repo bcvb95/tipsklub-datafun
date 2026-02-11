@@ -779,6 +779,17 @@ function showScreen(id) {{
     document.getElementById(id).classList.add('active');
 }}
 
+// ── ICE config (STUN + TURN for cross-network WebRTC) ──
+const ICE_CONFIG = {{
+    iceServers: [
+        {{ urls: 'stun:stun.l.google.com:19302' }},
+        {{ urls: 'stun:stun1.l.google.com:19302' }},
+        {{ urls: 'turn:staticauth.openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }},
+        {{ urls: 'turn:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
+        {{ urls: 'turns:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
+    ]
+}};
+
 // ── HOST ──
 function startHost() {{
     mode = 'host';
@@ -786,7 +797,7 @@ function startHost() {{
     document.getElementById('roomCodeDisplay').textContent = roomCode;
     const peerId = 'tipsklub-' + roomCode.toLowerCase();
 
-    peer = new Peer(peerId, {{ debug: 2 }});
+    peer = new Peer(peerId, {{ debug: 2, config: ICE_CONFIG }});
     peer.on('open', (id) => {{
         console.log('Host peer open:', id);
         const url = location.href.split('?')[0] + '?room=' + roomCode;
@@ -1153,7 +1164,7 @@ function joinRoom() {{
     errEl.style.color = '#94a3b8';
     errEl.textContent = 'Forbinder...';
 
-    peer = new Peer({{ debug: 2 }});
+    peer = new Peer({{ debug: 2, config: ICE_CONFIG }});
     peer.on('open', (myId) => {{
         console.log('Player peer open:', myId, '-> connecting to:', peerId);
         errEl.textContent = 'Forbundet til server, finder vært...';
