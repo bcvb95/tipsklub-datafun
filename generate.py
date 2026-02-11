@@ -780,15 +780,32 @@ function showScreen(id) {{
 }}
 
 // ── ICE config (STUN + TURN for cross-network WebRTC) ──
-const ICE_CONFIG = {{
-    iceServers: [
-        {{ urls: 'stun:stun.l.google.com:19302' }},
-        {{ urls: 'stun:stun1.l.google.com:19302' }},
-        {{ urls: 'turn:staticauth.openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }},
-        {{ urls: 'turn:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
-        {{ urls: 'turns:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
-    ]
-}};
+// Open Relay uses TURN static-auth: username=timestamp:id, credential=HMAC-SHA1(secret, username)
+let ICE_CONFIG = {{ iceServers: [{{ urls: 'stun:stun.l.google.com:19302' }}] }};
+
+async function setupIceConfig() {{
+    try {{
+        const secret = 'openrelayprojectsecret';
+        const timestamp = Math.floor(Date.now() / 1000) + 24 * 3600;
+        const username = timestamp + ':openrelayuser';
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey('raw', enc.encode(secret), {{ name: 'HMAC', hash: 'SHA-1' }}, false, ['sign']);
+        const sig = await crypto.subtle.sign('HMAC', key, enc.encode(username));
+        const credential = btoa(String.fromCharCode(...new Uint8Array(sig)));
+        ICE_CONFIG = {{
+            iceServers: [
+                {{ urls: 'stun:stun.l.google.com:19302' }},
+                {{ urls: 'turn:staticauth.openrelay.metered.ca:80', username, credential }},
+                {{ urls: 'turn:staticauth.openrelay.metered.ca:443', username, credential }},
+                {{ urls: 'turns:staticauth.openrelay.metered.ca:443', username, credential }},
+            ]
+        }};
+        console.log('TURN credentials ready');
+    }} catch(e) {{
+        console.warn('TURN setup failed, using STUN only:', e);
+    }}
+}}
+setupIceConfig();
 
 // ── HOST ──
 function startHost() {{

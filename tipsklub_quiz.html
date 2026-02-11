@@ -217,7 +217,7 @@ body {
 
 <script>
 // ── Data (embedded at build time) ──
-const QUESTIONS = [{"question": "Hvem endte med mest profit i 2025?", "options": ["Nixon", "Bjørn", "Gustav", "Jonas"], "correct": 0, "reveal": "Nixon med +655 kr", "chartId": "leaderboard"}, {"question": "Hvem havde den højeste win rate (vindende uger)?", "options": ["Nixon", "Jonas", "Gustav", "Nikolaj"], "correct": 0, "reveal": "Nixon med 77.8%", "chartId": "winrate"}, {"question": "Hvem havde de højeste gennemsnitlige odds?", "options": ["Jonas", "Nikolaj", "Gustav", "Bjørn"], "correct": 2, "reveal": "Gustav med gns. odds 4.39", "chartId": "odds"}, {"question": "Hvad var klubbens samlede profit i 2025?", "options": ["-477 kr", "+1,023 kr", "-2,477 kr", "-1,277 kr"], "correct": 0, "reveal": "Klubben endte på -477 kr", "chartId": "quickstats"}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Aug", "Jan", "Apr", "Feb"], "correct": 0, "reveal": "Aug med +687 kr profit", "chartId": "monthly"}, {"question": "Hvilken liga spillede vi mest på?", "options": ["UEFA Champions League", "La Liga", "Danish Superliga", "English Premier League"], "correct": 3, "reveal": "English Premier League med 55 bets", "chartId": "leagues"}, {"question": "Hvem havde den bedste enkeluge?", "options": ["Jonas", "Nikolaj", "Gustav", "Bjørn"], "correct": 1, "reveal": "Nikolaj med +590 kr", "chartId": "bigweeks"}, {"question": "Hvem havde den længste vindende stribe?", "options": ["Jonas", "Nikolaj", "Gustav", "Bjørn"], "correct": 3, "reveal": "Bjørn med 4 uger i træk", "chartId": "cumulative"}];
+const QUESTIONS = [{"question": "Hvem endte med mest profit i 2025?", "options": ["Nikolaj", "Nixon", "Jonas", "Gustav"], "correct": 1, "reveal": "Nixon med +655 kr", "chartId": "leaderboard"}, {"question": "Hvem havde den højeste win rate (vindende uger)?", "options": ["Bjørn", "Gustav", "Nixon", "Nikolaj"], "correct": 2, "reveal": "Nixon med 77.8%", "chartId": "winrate"}, {"question": "Hvem havde de højeste gennemsnitlige odds?", "options": ["Nikolaj", "Gustav", "Bjørn", "Nixon"], "correct": 1, "reveal": "Gustav med gns. odds 4.39", "chartId": "odds"}, {"question": "Hvad var klubbens samlede profit i 2025?", "options": ["-1,277 kr", "-477 kr", "-2,477 kr", "+1,023 kr"], "correct": 1, "reveal": "Klubben endte på -477 kr", "chartId": "quickstats"}, {"question": "Hvilken måned var bedst for klubben?", "options": ["Sep", "Mar", "Aug", "Maj"], "correct": 2, "reveal": "Aug med +687 kr profit", "chartId": "monthly"}, {"question": "Hvilken liga spillede vi mest på?", "options": ["UEFA Champions League", "Danish Superliga", "La Liga", "English Premier League"], "correct": 3, "reveal": "English Premier League med 55 bets", "chartId": "leagues"}, {"question": "Hvem havde den bedste enkeluge?", "options": ["Nixon", "Bjørn", "Nikolaj", "Gustav"], "correct": 2, "reveal": "Nikolaj med +590 kr", "chartId": "bigweeks"}, {"question": "Hvem havde den længste vindende stribe?", "options": ["Nikolaj", "Jonas", "Bjørn", "Gustav"], "correct": 2, "reveal": "Bjørn med 4 uger i træk", "chartId": "cumulative"}];
 const CHART_DATA = {
     cumulative: [{"label": "Bj\u00f8rn", "data": [{"x": "2025-01-08", "y": -175.0}, {"x": "2025-02-11", "y": -338.0}, {"x": "2025-03-20", "y": -522.0}, {"x": "2025-04-22", "y": -364.0}, {"x": "2025-05-31", "y": -164.0}, {"x": "2025-08-12", "y": -116.0}, {"x": "2025-09-22", "y": -89.0}, {"x": "2025-11-03", "y": -389.0}, {"x": "2025-12-18", "y": -442.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-01-21", "y": 175.0}, {"x": "2025-02-25", "y": 175.0}, {"x": "2025-04-01", "y": -125.0}, {"x": "2025-05-05", "y": -250.0}, {"x": "2025-05-31", "y": -300.0}, {"x": "2025-08-25", "y": 290.0}, {"x": "2025-10-17", "y": 279.0}, {"x": "2025-11-25", "y": 354.0}, {"x": "2025-12-29", "y": 254.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-02-03", "y": 72.0}, {"x": "2025-03-11", "y": -128.0}, {"x": "2025-04-15", "y": -60.0}, {"x": "2025-05-19", "y": 22.0}, {"x": "2025-05-31", "y": -28.0}, {"x": "2025-08-17", "y": 132.0}, {"x": "2025-09-16", "y": 506.0}, {"x": "2025-10-29", "y": 585.0}, {"x": "2025-12-09", "y": 655.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-01-14", "y": -165.0}, {"x": "2025-02-17", "y": -465.0}, {"x": "2025-03-24", "y": -114.0}, {"x": "2025-04-29", "y": -297.0}, {"x": "2025-05-31", "y": -347.0}, {"x": "2025-08-18", "y": -457.0}, {"x": "2025-09-30", "y": -407.0}, {"x": "2025-11-21", "y": -707.0}, {"x": "2025-12-22", "y": -267.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-01-29", "y": -65.0}, {"x": "2025-03-04", "y": -155.0}, {"x": "2025-04-12", "y": -455.0}, {"x": "2025-05-15", "y": -415.0}, {"x": "2025-05-31", "y": -465.0}, {"x": "2025-09-13", "y": -765.0}, {"x": "2025-10-21", "y": -763.0}, {"x": "2025-12-03", "y": -677.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}],
     leaderboard: {"labels": ["Gustav", "Bj\u00f8rn", "Jonas", "Nikolaj", "Nixon"], "data": [-677.0, -442.0, -267.0, 254.0, 655.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#2563eb", "#16a34a"]},
@@ -273,15 +273,32 @@ function showScreen(id) {
 }
 
 // ── ICE config (STUN + TURN for cross-network WebRTC) ──
-const ICE_CONFIG = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'turn:staticauth.openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-        { urls: 'turn:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-        { urls: 'turns:staticauth.openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-    ]
-};
+// Open Relay uses TURN static-auth: username=timestamp:id, credential=HMAC-SHA1(secret, username)
+let ICE_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+async function setupIceConfig() {
+    try {
+        const secret = 'openrelayprojectsecret';
+        const timestamp = Math.floor(Date.now() / 1000) + 24 * 3600;
+        const username = timestamp + ':openrelayuser';
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+        const sig = await crypto.subtle.sign('HMAC', key, enc.encode(username));
+        const credential = btoa(String.fromCharCode(...new Uint8Array(sig)));
+        ICE_CONFIG = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'turn:staticauth.openrelay.metered.ca:80', username, credential },
+                { urls: 'turn:staticauth.openrelay.metered.ca:443', username, credential },
+                { urls: 'turns:staticauth.openrelay.metered.ca:443', username, credential },
+            ]
+        };
+        console.log('TURN credentials ready');
+    } catch(e) {
+        console.warn('TURN setup failed, using STUN only:', e);
+    }
+}
+setupIceConfig();
 
 // ── HOST ──
 function startHost() {
