@@ -586,13 +586,25 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         w = profitable_weeks + offset
         wrong_options.append(f'{w} af {total_weeks}')
     opts, ci = make_options(correct_str, wrong_options)
+    # Monthly breakdown: profitable weeks per month
+    months_in_data = sorted(weekly["Month"].unique())
+    monthly_weeks_ranking = []
+    for m in months_in_data:
+        mw = weekly[weekly["Month"] == m]
+        plus = int(len(mw[mw["Profit"] > 0]))
+        total_m = int(len(mw))
+        monthly_weeks_ranking.append({
+            "name": DANISH_MONTHS[int(m) - 1],
+            "value": f'{plus}/{total_m} uger i plus'})
+    monthly_weeks_ranking.sort(
+        key=lambda x: int(x["value"].split("/")[0]), reverse=True)
     questions.append({
         "question": f"Hvor mange af {total_weeks} uger endte i plus?",
         "options": opts, "correct": ci,
         "reveal": f'{profitable_weeks} af {total_weeks} — '
                   f'{profitable_weeks / total_weeks * 100:.0f}% af ugerne endte i plus!',
         "chartId": "cumulativeClub",
-        "ranking": player_ranking("Win Rate", ".0f", "%"),
+        "ranking": monthly_weeks_ranking,
     })
 
     # ── Q8: MILDEST WORST WEEK ──
