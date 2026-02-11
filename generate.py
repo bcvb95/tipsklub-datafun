@@ -835,6 +835,8 @@ let myScore = 0;
 let myCorrectCount = 0;
 let answerOrder = []; // host: tracks order of correct answers for speed bonus
 let revealChart = null;
+let quizStarted = false;
+let disconnectedPlayers = {{}}; // host: name -> player data (preserved on disconnect)
 
 // ── Screen management ──
 function showScreen(id) {{
@@ -879,7 +881,12 @@ function startHost() {{
             conn.on('data', (data) => handleHostMessage(conn, data));
             conn.on('close', () => {{
                 connections = connections.filter(c => c !== conn);
-                delete players[conn.connectionId];
+                const p = players[conn.connectionId];
+                if (p) {{
+                    // Preserve player data for reconnection
+                    disconnectedPlayers[p.name] = p;
+                    delete players[conn.connectionId];
+                }}
                 updatePlayerList();
             }});
         }});
@@ -895,9 +902,22 @@ function genCode() {{
 
 function handleHostMessage(conn, data) {{
     if (data.type === 'join') {{
-        players[conn.connectionId] = {{ name: data.name, score: 0, answered: false, correct_count: 0, answers: [] }};
+        // Check if reconnecting player
+        if (disconnectedPlayers[data.name]) {{
+            players[conn.connectionId] = disconnectedPlayers[data.name];
+            delete disconnectedPlayers[data.name];
+            console.log('Player reconnected:', data.name);
+        }} else {{
+            players[conn.connectionId] = {{ name: data.name, score: 0, answered: false, correct_count: 0, answers: [] }};
+        }}
         updatePlayerList();
         conn.send({{ type: 'joined', name: data.name }});
+
+        // If quiz is in progress, send current question
+        if (quizStarted && currentQ < QUESTIONS.length) {{
+            const q = QUESTIONS[currentQ];
+            conn.send({{ type: 'question', index: currentQ, question: q.question, options: q.options }});
+        }}
     }}
     if (data.type === 'answer') {{
         const p = players[conn.connectionId];
@@ -928,11 +948,16 @@ function handleHostMessage(conn, data) {{
 
 function updatePlayerList() {{
     const list = document.getElementById('playerList');
-    const names = Object.values(players).map(p => p.name);
-    list.innerHTML = names.map(n => {{
+    const connected = Object.values(players).map(p => p.name);
+    const disconnected = Object.keys(disconnectedPlayers);
+    let html = connected.map(n => {{
         const color = PLAYER_COLORS[n] || '#2563eb';
         return `<div class="player-chip"><div class="player-dot" style="background:${{color}}"></div>${{n}}</div>`;
     }}).join('');
+    html += disconnected.map(n => {{
+        return `<div class="player-chip" style="opacity:.4"><div class="player-dot" style="background:#64748b"></div>${{n}} (frakoblet)</div>`;
+    }}).join('');
+    list.innerHTML = html;
 }}
 
 function updateHostVotes() {{
@@ -952,6 +977,7 @@ function updateHostVotes() {{
 
 function hostStartQuiz() {{
     currentQ = 0;
+    quizStarted = true;
     hostSendQuestion();
 }}
 
@@ -1280,7 +1306,8 @@ function joinRoom() {{
             console.error('Connection error:', err);
         }});
         hostConn.on('close', () => {{
-            console.log('Connection to host closed');
+            console.log('Connection to host closed, attempting reconnect...');
+            attemptReconnect(peerId, name);
         }});
     }});
     peer.on('error', (err) => {{
@@ -1305,6 +1332,37 @@ function joinRoom() {{
             }}
         }}
     }}, 10000);
+}}
+
+function attemptReconnect(peerId, name) {{
+    let attempts = 0;
+    const maxAttempts = 5;
+    function tryConnect() {{
+        if (attempts >= maxAttempts) return;
+        attempts++;
+        console.log('Reconnect attempt', attempts);
+        // Ensure peer is still connected to signaling server
+        if (peer.disconnected) {{
+            peer.reconnect();
+        }}
+        setTimeout(() => {{
+            if (!peer.open) {{ tryConnect(); return; }}
+            hostConn = peer.connect(peerId, {{ reliable: true, serialization: 'json' }});
+            hostConn.on('open', () => {{
+                console.log('Reconnected!');
+                hostConn.send({{ type: 'join', name }});
+                hostConn.on('data', (data) => handlePlayerMessage(data, name));
+                hostConn.on('close', () => {{
+                    console.log('Connection lost again, reconnecting...');
+                    attemptReconnect(peerId, name);
+                }});
+            }});
+            hostConn.on('error', () => {{
+                setTimeout(tryConnect, 2000);
+            }});
+        }}, 2000);
+    }}
+    tryConnect();
 }}
 
 function handlePlayerMessage(data, myName) {{
