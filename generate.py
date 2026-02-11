@@ -383,53 +383,10 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         return [{"name": r["Spiller"], "value": f'{r[col]:{fmt}}{suffix}'}
                 for _, r in sorted_stats.iterrows()]
 
-    # ── Q1: THE CHAMPION ──
-    # Classic opener — who came out on top?
+    # ── Compute shared data ──
     profit_ranked = stats.sort_values("Total Profit", ascending=False)
-    best = profit_ranked.iloc[0]
-    opts, ci = make_options(
-        best["Spiller"],
-        [p for p in PLAYER_ORDER if p != best["Spiller"]])
-    questions.append({
-        "question": "Hvem blev årets Tipsklub-mester med mest profit?",
-        "options": opts, "correct": ci,
-        "reveal": f'{best["Spiller"]} med {best["Total Profit"]:+,.0f} kr',
-        "chartId": "leaderboard",
-        "ranking": player_ranking("Total Profit"),
-    })
 
-    # ── Q2: THE BOTTOM ──
-    # Roast moment — who lost the most?
-    worst = profit_ranked.iloc[-1]
-    opts, ci = make_options(
-        worst["Spiller"],
-        [p for p in PLAYER_ORDER if p != worst["Spiller"]])
-    questions.append({
-        "question": "Hvem endte i bunden med størst tab?",
-        "options": opts, "correct": ci,
-        "reveal": f'{worst["Spiller"]} med {worst["Total Profit"]:+,.0f} kr',
-        "chartId": "leaderboard",
-        "ranking": player_ranking("Total Profit"),
-    })
-
-    # ── Q3: WIN RATE ──
-    # Nixon's 77.8% is absurdly high — should be a surprise
-    wr_ranked = stats.sort_values("Win Rate", ascending=False)
-    wr_best = wr_ranked.iloc[0]
-    opts, ci = make_options(
-        wr_best["Spiller"],
-        [p for p in PLAYER_ORDER if p != wr_best["Spiller"]])
-    questions.append({
-        "question": "Hvem vandt flest af sine uger (højeste win rate)?",
-        "options": opts, "correct": ci,
-        "reveal": f'{wr_best["Spiller"]} med {wr_best["Win Rate"]:.0f}% '
-                  f'({wr_best["Winning Weeks"]:.0f} af {wr_best["Weeks"]:.0f} uger)',
-        "chartId": "winrate",
-        "ranking": player_ranking("Win Rate", ".0f", "%"),
-    })
-
-    # ── Q4: BEST SINGLE WEEK ──
-    # Nikolaj's +590 kr week is the biggest hit
+    # ── Q1: BEST SINGLE WEEK (opener — answer is NOT the overall champ) ──
     best_week_row = weekly.loc[weekly["Profit"].idxmax()]
     best_week_player = best_week_row["Spiller"]
     opts, ci = make_options(
@@ -450,31 +407,40 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": best_weeks_ranked,
     })
 
-    # ── Q5: MILDEST WORST WEEK ──
-    # 4 of 5 players hit -300 — so ask who got off lightest
-    worst_per_player = {}
-    for p in PLAYER_ORDER:
-        pw = weekly[weekly["Spiller"] == p]
-        worst_per_player[p] = pw["Profit"].min()
-    mildest_player = max(worst_per_player, key=worst_per_player.get)
-    worst_weeks_ranked = [
-        {"name": p, "value": f'{v:+,.0f} kr'}
-        for p, v in sorted(worst_per_player.items(), key=lambda x: x[1])]
-    opts, ci = make_options(
-        mildest_player,
-        [p for p in PLAYER_ORDER if p != mildest_player])
+    # ── Q2: BEST MONTH (non-player question, easy warmup) ──
+    month_totals = weekly.groupby("Month")["Profit"].sum()
+    best_month_num = int(month_totals.idxmax())
+    best_month_name = DANISH_MONTHS[best_month_num - 1]
+    all_month_names = [DANISH_MONTHS[int(m) - 1] for m in month_totals.index]
+    other_months = [m for m in all_month_names if m != best_month_name]
+    random.shuffle(other_months)
+    opts, ci = make_options(best_month_name, other_months[:3])
+    month_ranking = [
+        {"name": DANISH_MONTHS[int(m) - 1],
+         "value": f'{v:+,.0f} kr'}
+        for m, v in month_totals.sort_values(ascending=False).items()]
     questions.append({
-        "question": "Hvem slap billigst i sin værste uge?",
+        "question": "Hvilken måned var bedst for klubben?",
         "options": opts, "correct": ci,
-        "reveal": f'{mildest_player} — værste uge var kun '
-                  f'{worst_per_player[mildest_player]:+,.0f} kr '
-                  f'(4 andre ramte {min(worst_per_player.values()):+,.0f})',
-        "chartId": "bigweeks",
-        "ranking": worst_weeks_ranked,
+        "reveal": f'{best_month_name} med {month_totals.max():+,.0f} kr profit',
+        "chartId": "monthly",
+        "ranking": month_ranking,
     })
 
-    # ── Q6: MOST PROFITABLE LEAGUE ──
-    # Surprise: Bundesliga (+784) beats everything despite fewer bets
+    # ── Q3: THE BOTTOM (roast — different player from Q1) ──
+    worst = profit_ranked.iloc[-1]
+    opts, ci = make_options(
+        worst["Spiller"],
+        [p for p in PLAYER_ORDER if p != worst["Spiller"]])
+    questions.append({
+        "question": "Hvem endte i bunden med størst tab?",
+        "options": opts, "correct": ci,
+        "reveal": f'{worst["Spiller"]} med {worst["Total Profit"]:+,.0f} kr',
+        "chartId": "leaderboard",
+        "ranking": player_ranking("Total Profit"),
+    })
+
+    # ── Q4: MOST PROFITABLE LEAGUE (non-player, surprise) ──
     df_leagues = df_bets.copy()
     df_leagues["Liga"] = df_leagues["Liga"].fillna("").astype(str).str.split(",")
     df_leagues = df_leagues.explode("Liga")
@@ -500,39 +466,70 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": league_ranking,
     })
 
-    # ── Q7: BEST MONTH ──
-    month_totals = weekly.groupby("Month")["Profit"].sum()
-    best_month_num = int(month_totals.idxmax())
-    best_month_name = DANISH_MONTHS[best_month_num - 1]
-    all_month_names = [DANISH_MONTHS[int(m) - 1] for m in month_totals.index]
-    other_months = [m for m in all_month_names if m != best_month_name]
-    random.shuffle(other_months)
-    opts, ci = make_options(best_month_name, other_months[:3])
-    month_ranking = [
-        {"name": DANISH_MONTHS[int(m) - 1],
-         "value": f'{v:+,.0f} kr'}
-        for m, v in month_totals.sort_values(ascending=False).items()]
+    # ── Q5: WIN RATE (first question with the overall champ as answer) ──
+    wr_ranked = stats.sort_values("Win Rate", ascending=False)
+    wr_best = wr_ranked.iloc[0]
+    opts, ci = make_options(
+        wr_best["Spiller"],
+        [p for p in PLAYER_ORDER if p != wr_best["Spiller"]])
     questions.append({
-        "question": "Hvilken måned var bedst for klubben?",
+        "question": "Hvem vandt flest af sine uger (højeste win rate)?",
         "options": opts, "correct": ci,
-        "reveal": f'{best_month_name} med {month_totals.max():+,.0f} kr profit',
-        "chartId": "monthly",
-        "ranking": month_ranking,
+        "reveal": f'{wr_best["Spiller"]} med {wr_best["Win Rate"]:.0f}% '
+                  f'({wr_best["Winning Weeks"]:.0f} af {wr_best["Weeks"]:.0f} uger)',
+        "chartId": "winrate",
+        "ranking": player_ranking("Win Rate", ".0f", "%"),
     })
 
-    # ── Q8: ROI KING — FINALE ──
-    # "Hvem fik mest ud af pengene" — ties the story together
-    roi_ranked = stats.sort_values("ROI", ascending=False)
-    roi_best = roi_ranked.iloc[0]
-    opts, ci = make_options(
-        roi_best["Spiller"],
-        [p for p in PLAYER_ORDER if p != roi_best["Spiller"]])
+    # ── Q6: CLUB TOTAL PROFIT (number question — twist: it's negative!) ──
+    club_profit = stats["Total Profit"].sum()
+    correct_str = f'{club_profit:+,.0f} kr'
+    # Generate plausible wrong answers spread around the real value
+    wrong_amounts = []
+    for offset in [800, -600, 1500]:
+        wrong_amounts.append(f'{club_profit + offset:+,.0f} kr')
+    opts, ci = make_options(correct_str, wrong_amounts)
     questions.append({
-        "question": "Hvem fik mest valuta for pengene (bedste ROI)?",
+        "question": "Hvad var klubbens samlede profit i 2025?",
         "options": opts, "correct": ci,
-        "reveal": f'{roi_best["Spiller"]} med {roi_best["ROI"]:+.1f}% afkast',
+        "reveal": f'Klubben endte på {club_profit:+,.0f} kr samlet',
         "chartId": "cumulative",
-        "ranking": player_ranking("ROI", "+.1f", "%"),
+        "ranking": player_ranking("Total Profit"),
+    })
+
+    # ── Q7: MILDEST WORST WEEK (different angle — not obvious from Q5) ──
+    worst_per_player = {}
+    for p in PLAYER_ORDER:
+        pw = weekly[weekly["Spiller"] == p]
+        worst_per_player[p] = pw["Profit"].min()
+    mildest_player = max(worst_per_player, key=worst_per_player.get)
+    worst_weeks_ranked = [
+        {"name": p, "value": f'{v:+,.0f} kr'}
+        for p, v in sorted(worst_per_player.items(), key=lambda x: x[1])]
+    opts, ci = make_options(
+        mildest_player,
+        [p for p in PLAYER_ORDER if p != mildest_player])
+    questions.append({
+        "question": "Hvem slap billigst i sin værste uge?",
+        "options": opts, "correct": ci,
+        "reveal": f'{mildest_player} — værste uge var kun '
+                  f'{worst_per_player[mildest_player]:+,.0f} kr '
+                  f'(4 andre ramte {min(worst_per_player.values()):+,.0f})',
+        "chartId": "bigweeks",
+        "ranking": worst_weeks_ranked,
+    })
+
+    # ── Q8: THE CHAMPION — GRAND FINALE ──
+    best = profit_ranked.iloc[0]
+    opts, ci = make_options(
+        best["Spiller"],
+        [p for p in PLAYER_ORDER if p != best["Spiller"]])
+    questions.append({
+        "question": "Hvem blev årets Tipsklub-mester med mest profit?",
+        "options": opts, "correct": ci,
+        "reveal": f'{best["Spiller"]} med {best["Total Profit"]:+,.0f} kr',
+        "chartId": "leaderboard",
+        "ranking": player_ranking("Total Profit"),
     })
 
     return json.dumps(questions, ensure_ascii=False)
