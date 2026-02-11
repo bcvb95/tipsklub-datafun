@@ -786,7 +786,6 @@ body {{
 </div>
 
 <script>
-console.log('Quiz version: 2025-02-11-v3');
 // ── Data (embedded at build time) ──
 const QUESTIONS = {quiz_json};
 const CHART_DATA = {{
@@ -922,22 +921,15 @@ function handleHostMessage(conn, data) {{
     }}
     if (data.type === 'answer') {{
         const p = players[conn.connectionId];
-        if (!p) {{
-            console.warn('Answer from unknown connection:', conn.connectionId);
-            return;
-        }}
+        if (!p) return;
         const optIdx = parseInt(data.option);
-        console.log('Answer from', p.name, ':', optIdx, 'previously answered:', p.answered);
 
         // Remove previous vote if changing answer
         if (p.answered) {{
             for (const key of Object.keys(votes)) {{
                 const arr = votes[key];
                 const idx = arr.indexOf(p.name);
-                if (idx !== -1) {{
-                    arr.splice(idx, 1);
-                    console.log('Removed old vote from option', key);
-                }}
+                if (idx !== -1) arr.splice(idx, 1);
             }}
             answerOrder = answerOrder.filter(id => id !== conn.connectionId);
         }}
@@ -945,7 +937,6 @@ function handleHostMessage(conn, data) {{
         p.answered = true;
         if (!votes[optIdx]) votes[optIdx] = [];
         votes[optIdx].push(p.name);
-        console.log('Added vote to option', optIdx, 'votes now:', JSON.stringify(votes));
 
         // Track correct answer order for speed bonus (first correct stays first)
         const q = QUESTIONS[currentQ];
@@ -975,20 +966,12 @@ function updateHostVotes() {{
     const q = QUESTIONS[currentQ];
     const totalPlayers = Object.keys(players).length;
     const totalVotes = Object.values(votes).reduce((s, arr) => s + arr.length, 0);
-    console.log('updateHostVotes called. votes:', JSON.stringify(votes), 'totalVotes:', totalVotes);
 
     q.options.forEach((opt, i) => {{
         const count = (votes[i] || []).length;
         const el = document.getElementById('hostOpt' + i);
         if (el) {{
-            const countEl = el.querySelector('.count');
-            if (countEl) {{
-                countEl.textContent = count;
-            }} else {{
-                console.warn('No .count element found in hostOpt' + i);
-            }}
-        }} else {{
-            console.warn('No element found: hostOpt' + i);
+            el.querySelector('.count').textContent = count;
         }}
     }});
     document.getElementById('hostVoteCount').textContent = totalVotes + ' / ' + totalPlayers + ' har svaret';
