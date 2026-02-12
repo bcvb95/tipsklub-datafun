@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv:*)",
+      "Bash(python3:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")"
+    ]
+  }
+}

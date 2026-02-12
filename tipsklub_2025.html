@@ -66,14 +66,14 @@ body {
 <div class="container">
     <div class="header">
         <h1>Tipsklub 2025</h1>
-        <div class="sub">Årets Overblik &middot; 34 uger &middot; 121 bets &middot; 5 spillere</div>
+        <div class="sub">Årets Overblik &middot; 31 uger &middot; 110 bets &middot; 5 spillere</div>
     </div>
 
     <div class="quick-stats">
-        <div class="qs"><div class="val">34</div><div class="lbl">Uger spillet</div></div>
-        <div class="qs"><div class="val">121</div><div class="lbl">Bets i alt</div></div>
-        <div class="qs"><div class="val">8,600</div><div class="lbl">Satset (kr)</div></div>
-        <div class="qs"><div class="val positive">+1,086</div><div class="lbl">Klub Profit</div></div>
+        <div class="qs"><div class="val">31</div><div class="lbl">Uger spillet</div></div>
+        <div class="qs"><div class="val">110</div><div class="lbl">Bets i alt</div></div>
+        <div class="qs"><div class="val">7,750</div><div class="lbl">Satset (kr)</div></div>
+        <div class="qs"><div class="val positive">+842</div><div class="lbl">Klub Profit</div></div>
     </div>
 
     <div class="card">
@@ -92,7 +92,7 @@ body {
         <div class="award-emoji">💰</div>
         <div class="award-title">Årets Pengemaskine</div>
         <div class="award-player" style="color: #16a34a;">Nixon</div>
-        <div class="award-stat">+746 kr profit</div>
+        <div class="award-stat">+678 kr profit</div>
         <div class="award-subtitle">Pengene printer bare. Resten kan lære noget.</div>
     </div>
 <div class="award-card" style="border-top: 3px solid #dc2626;">
@@ -102,10 +102,10 @@ body {
         <div class="award-stat">-207 kr profit</div>
         <div class="award-subtitle">Nogen skal jo finansiere de andres gevinster.</div>
     </div>
-<div class="award-card" style="border-top: 3px solid #d97706;">
+<div class="award-card" style="border-top: 3px solid #16a34a;">
         <div class="award-emoji">🔥</div>
         <div class="award-title">Den Vilde Stribe</div>
-        <div class="award-player" style="color: #d97706;">Bjørn</div>
+        <div class="award-player" style="color: #16a34a;">Nixon</div>
         <div class="award-stat">4 vindende uger i træk</div>
         <div class="award-subtitle">Uhyggeligt. Ringede bookmakerne?</div>
     </div>
@@ -120,14 +120,14 @@ body {
         <div class="award-emoji">🐌</div>
         <div class="award-title">Sikansen</div>
         <div class="award-player" style="color: #d97706;">Bjørn</div>
-        <div class="award-stat">Gns. odds: 3.04</div>
+        <div class="award-stat">Gns. odds: 3.14</div>
         <div class="award-subtitle">Spænding? Nej tak. Sikkerhed først.</div>
     </div>
 <div class="award-card" style="border-top: 3px solid #16a34a;">
         <div class="award-emoji">📈</div>
         <div class="award-title">ROI-Kongen</div>
         <div class="award-player" style="color: #16a34a;">Nixon</div>
-        <div class="award-stat">+40.3% afkast</div>
+        <div class="award-stat">+43.8% afkast</div>
         <div class="award-subtitle">Krone for krone den bedste investering.</div>
     </div>
 <div class="award-card" style="border-top: 3px solid #2563eb;">
@@ -178,7 +178,7 @@ body {
         <canvas id="chartBigweeks" height="220"></canvas>
     </div>
 
-    <div class="footer">Tipsklub 2025 &middot; Genereret 11/02/2026</div>
+    <div class="footer">Tipsklub 2025 &middot; Genereret 12/02/2026</div>
 </div>
 
 <script>
@@ -187,7 +187,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 1: Cumulative P/L ──
 (function() {
-    const datasets = [{"label": "Bj\u00f8rn", "data": [{"x": "2025-04-22", "y": 159.0}, {"x": "2025-05-31", "y": 359.0}, {"x": "2025-08-12", "y": 406.0}, {"x": "2025-09-22", "y": 434.0}, {"x": "2025-11-03", "y": 134.0}, {"x": "2025-12-18", "y": 81.0}, {"x": "2026-01-19", "y": 133.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-05-05", "y": -125.0}, {"x": "2025-05-31", "y": -175.0}, {"x": "2025-08-25", "y": 415.0}, {"x": "2025-10-17", "y": 404.0}, {"x": "2025-11-25", "y": 479.0}, {"x": "2025-12-29", "y": 549.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-04-15", "y": 68.0}, {"x": "2025-05-19", "y": 150.0}, {"x": "2025-05-31", "y": 100.0}, {"x": "2025-08-17", "y": 260.0}, {"x": "2025-09-16", "y": 634.0}, {"x": "2025-10-29", "y": 713.0}, {"x": "2025-12-09", "y": 783.0}, {"x": "2026-01-13", "y": 746.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-04-29", "y": -182.0}, {"x": "2025-05-31", "y": -232.0}, {"x": "2025-08-18", "y": -342.0}, {"x": "2025-09-30", "y": -292.0}, {"x": "2025-11-21", "y": -592.0}, {"x": "2025-12-22", "y": -153.0}, {"x": "2026-01-26", "y": -135.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-05-15", "y": 40.0}, {"x": "2025-05-31", "y": -10.0}, {"x": "2025-09-13", "y": -310.0}, {"x": "2025-10-21", "y": -308.0}, {"x": "2025-12-03", "y": -222.0}, {"x": "2026-01-07", "y": -207.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}];
+    const datasets = [{"label": "Bj\u00f8rn", "data": [{"x": "2025-05-31", "y": 200.0}, {"x": "2025-08-12", "y": 247.0}, {"x": "2025-09-22", "y": 275.0}, {"x": "2025-11-03", "y": -25.0}, {"x": "2025-12-18", "y": -78.0}, {"x": "2026-01-19", "y": -26.0}], "borderColor": "#d97706", "backgroundColor": "#d97706", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nikolaj", "data": [{"x": "2025-05-05", "y": -125.0}, {"x": "2025-05-31", "y": -175.0}, {"x": "2025-08-25", "y": 415.0}, {"x": "2025-10-17", "y": 404.0}, {"x": "2025-11-25", "y": 479.0}, {"x": "2025-12-29", "y": 549.0}], "borderColor": "#2563eb", "backgroundColor": "#2563eb", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Nixon", "data": [{"x": "2025-05-19", "y": 83.0}, {"x": "2025-05-31", "y": 33.0}, {"x": "2025-08-17", "y": 192.0}, {"x": "2025-09-16", "y": 567.0}, {"x": "2025-10-29", "y": 646.0}, {"x": "2025-12-09", "y": 716.0}, {"x": "2026-01-13", "y": 678.0}], "borderColor": "#16a34a", "backgroundColor": "#16a34a", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Jonas", "data": [{"x": "2025-04-29", "y": -182.0}, {"x": "2025-05-31", "y": -232.0}, {"x": "2025-08-18", "y": -342.0}, {"x": "2025-09-30", "y": -292.0}, {"x": "2025-11-21", "y": -592.0}, {"x": "2025-12-22", "y": -153.0}], "borderColor": "#9333ea", "backgroundColor": "#9333ea", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}, {"label": "Gustav", "data": [{"x": "2025-05-15", "y": 40.0}, {"x": "2025-05-31", "y": -10.0}, {"x": "2025-09-13", "y": -310.0}, {"x": "2025-10-21", "y": -308.0}, {"x": "2025-12-03", "y": -222.0}, {"x": "2026-01-07", "y": -207.0}], "borderColor": "#dc2626", "backgroundColor": "#dc2626", "borderWidth": 3, "pointRadius": 5, "pointHoverRadius": 7, "tension": 0.15, "fill": false}];
     new Chart(document.getElementById('chartCumulative'), {
         type: 'line',
         data: { datasets },
@@ -218,7 +218,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 2: Leaderboard ──
 (function() {
-    const d = {"labels": ["Gustav", "Jonas", "Bj\u00f8rn", "Nikolaj", "Nixon"], "data": [-207.0, -135.0, 133.0, 549.0, 746.0], "colors": ["#dc2626", "#9333ea", "#d97706", "#2563eb", "#16a34a"]};
+    const d = {"labels": ["Gustav", "Jonas", "Bj\u00f8rn", "Nikolaj", "Nixon"], "data": [-207.0, -153.0, -26.0, 549.0, 678.0], "colors": ["#dc2626", "#9333ea", "#d97706", "#2563eb", "#16a34a"]};
     new Chart(document.getElementById('chartLeaderboard'), {
         type: 'bar',
         data: {
@@ -244,7 +244,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 3: Win Rate ──
 (function() {
-    const d = {"labels": ["Nixon", "Bj\u00f8rn", "Gustav", "Nikolaj", "Jonas"], "data": [75.0, 71.4, 66.7, 50.0, 42.9], "colors": ["#16a34a", "#d97706", "#dc2626", "#2563eb", "#9333ea"], "weeks": [8, 7, 6, 6, 7], "winning": [6, 5, 4, 3, 3]};
+    const d = {"labels": ["Nixon", "Bj\u00f8rn", "Gustav", "Nikolaj", "Jonas"], "data": [71.4, 66.7, 66.7, 50.0, 33.3], "colors": ["#16a34a", "#d97706", "#dc2626", "#2563eb", "#9333ea"], "weeks": [7, 6, 6, 6, 6], "winning": [5, 4, 4, 3, 2]};
     new Chart(document.getElementById('chartWinrate'), {
         type: 'bar',
         data: {
@@ -274,7 +274,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 4: Monthly Profit ──
 (function() {
-    const d = {"labels": ["Jan", "Apr", "Maj", "Aug", "Sep", "Okt", "Nov", "Dec"], "datasets": [{"label": "Bj\u00f8rn", "data": [52.0, 159.0, 200.0, 47.0, 28.0, 0.0, -300.0, -53.0], "backgroundColor": "#d97706"}, {"label": "Nikolaj", "data": [0.0, 0.0, -175.0, 590.0, 0.0, -11.0, 75.0, 70.0], "backgroundColor": "#2563eb"}, {"label": "Nixon", "data": [-38.0, 68.0, 33.0, 159.0, 375.0, 79.0, 0.0, 70.0], "backgroundColor": "#16a34a"}, {"label": "Jonas", "data": [18.0, -182.0, -50.0, -110.0, 50.0, 0.0, -300.0, 440.0], "backgroundColor": "#9333ea"}, {"label": "Gustav", "data": [15.0, 0.0, -10.0, 0.0, -300.0, 2.0, 0.0, 86.0], "backgroundColor": "#dc2626"}]};
+    const d = {"labels": ["Jan", "Apr", "Maj", "Aug", "Sep", "Okt", "Nov", "Dec"], "datasets": [{"label": "Bj\u00f8rn", "data": [52.0, 0.0, 200.0, 47.0, 28.0, 0.0, -300.0, -53.0], "backgroundColor": "#d97706"}, {"label": "Nikolaj", "data": [0.0, 0.0, -175.0, 590.0, 0.0, -11.0, 75.0, 70.0], "backgroundColor": "#2563eb"}, {"label": "Nixon", "data": [-38.0, 0.0, 33.0, 159.0, 375.0, 79.0, 0.0, 70.0], "backgroundColor": "#16a34a"}, {"label": "Jonas", "data": [0.0, -182.0, -50.0, -110.0, 50.0, 0.0, -300.0, 440.0], "backgroundColor": "#9333ea"}, {"label": "Gustav", "data": [15.0, 0.0, -10.0, 0.0, -300.0, 2.0, 0.0, 86.0], "backgroundColor": "#dc2626"}]};
     new Chart(document.getElementById('chartMonthly'), {
         type: 'bar',
         data: {
@@ -298,7 +298,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 5: Leagues ──
 (function() {
-    const d = {"labels": ["UEFA Europa League", "Ligue 1", "Africa Cup of Nations", "EFL Championship", "Bundesliga", "Serie A", "La Liga", "Danish Superliga", "UEFA Champions League", "English Premier League"], "bets": [2, 2, 4, 8, 14, 16, 16, 19, 32, 48], "profit": [-62.0, 28.0, 239.0, 459.0, 732.0, -241.0, 163.0, 241.0, 179.0, -13.0], "colors": ["#dc2626", "#16a34a", "#16a34a", "#16a34a", "#16a34a", "#dc2626", "#16a34a", "#16a34a", "#16a34a", "#dc2626"]};
+    const d = {"labels": ["Ligue 1", "UEFA Europa League", "Africa Cup of Nations", "EFL Championship", "Bundesliga", "La Liga", "Serie A", "Danish Superliga", "UEFA Champions League", "English Premier League"], "bets": [2, 2, 4, 8, 12, 12, 16, 18, 29, 44], "profit": [28.0, -62.0, 239.0, 459.0, 684.0, -54.0, -241.0, -68.0, 285.0, -250.0], "colors": ["#16a34a", "#dc2626", "#16a34a", "#16a34a", "#16a34a", "#dc2626", "#dc2626", "#dc2626", "#16a34a", "#dc2626"]};
     new Chart(document.getElementById('chartLeagues'), {
         type: 'bar',
         data: {
@@ -329,7 +329,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 6: Odds ──
 (function() {
-    const d = [{"player": "Bj\u00f8rn", "odds": [2.55, 0.0, 3.15, 4.09, 5.0, 2.59, 1.77, 3.45, 2.9, 2.97, 2.45, 2.6, 3.25, 3.3, 2.88, 2.82, 7.75, 2.85, 3.2, 3.2, 3.2, 2.53, 2.47, 2.25, 2.4, 2.4, 4.0], "avg": 3.04, "min": 0.0, "max": 7.75, "color": "#d97706"}, {"player": "Nikolaj", "odds": [3.9, 4.2, 3.5, 3.5, 2.1, 5.5, 3.2, 9.4, 4.18, 4.95, 4.28, 1.7, 2.89, 3.1, 2.1, 2.55, 3.75, 2.6, 3.2, 3.2, 2.28, 1.42], "avg": 3.52, "min": 1.42, "max": 9.4, "color": "#2563eb"}, {"player": "Nixon", "odds": [3.4, 2.59, 2.7, 2.31, 2.03, 2.05, 2.4, 2.21, 2.0, 2.59, 3.48, 9.08, 15.0, 2.35, 3.3, 2.73, 2.7, 4.45, 2.72, 3.6, 3.7, 2.1, 2.7, 2.1, 2.7], "avg": 3.48, "min": 2.0, "max": 15.0, "color": "#16a34a"}, {"player": "Jonas", "odds": [3.36, 2.5, 2.35, 3.2, 3.5, 0.55, 2.4, 3.61, 3.25, 4.98, 3.11, 3.03, 7.0, 2.5, 3.04, 4.48, 2.88, 2.4, 3.65, 3.08, 3.68, 3.75, 2.15, 2.82, 3.18], "avg": 3.22, "min": 0.55, "max": 7.0, "color": "#9333ea"}, {"player": "Gustav", "odds": [3.06, 1.9, 1.85, 9.0, 2.5, 2.3, 15.0, 2.9, 3.3, 19.0, 3.02, 6.0, 4.0, 2.2, 2.7, 3.86, 2.02, 9.0, 3.44, 3.25, 3.66, 6.3], "avg": 5.01, "min": 1.85, "max": 19.0, "color": "#dc2626"}];
+    const d = [{"player": "Bj\u00f8rn", "odds": [5.0, 2.59, 1.77, 3.45, 2.9, 2.97, 2.45, 2.6, 3.25, 3.3, 2.88, 2.82, 7.75, 2.85, 3.2, 3.2, 3.2, 2.53, 2.47, 2.25, 2.4, 2.4, 4.0], "avg": 3.14, "min": 1.77, "max": 7.75, "color": "#d97706"}, {"player": "Nikolaj", "odds": [3.9, 4.2, 3.5, 3.5, 2.1, 5.5, 3.2, 4.28, 4.95, 4.18, 9.4, 1.7, 2.89, 3.1, 2.1, 2.55, 3.75, 2.6, 3.2, 3.2, 2.28, 1.42], "avg": 3.52, "min": 1.42, "max": 9.4, "color": "#2563eb"}, {"player": "Nixon", "odds": [2.03, 2.05, 2.4, 2.21, 2.0, 2.59, 3.48, 9.08, 15.0, 2.35, 2.7, 3.3, 2.73, 4.45, 2.72, 3.6, 3.7, 2.1, 2.7, 2.1, 2.7], "avg": 3.62, "min": 2.0, "max": 15.0, "color": "#16a34a"}, {"player": "Jonas", "odds": [3.36, 2.5, 2.35, 3.2, 3.5, 0.55, 2.4, 3.61, 3.25, 3.11, 4.98, 3.03, 7.0, 2.5, 3.04, 4.48, 2.88, 2.4, 3.65, 3.08, 3.68, 3.75], "avg": 3.29, "min": 0.55, "max": 7.0, "color": "#9333ea"}, {"player": "Gustav", "odds": [3.06, 1.9, 9.0, 1.85, 2.5, 2.3, 15.0, 19.0, 3.3, 2.9, 3.02, 6.0, 4.0, 2.2, 2.7, 3.86, 2.02, 9.0, 3.44, 3.25, 3.66, 6.3], "avg": 5.01, "min": 1.85, "max": 19.0, "color": "#dc2626"}];
     const labels = d.map(p => p.player);
     const avgs = d.map(p => p.avg);
     const mins = d.map(p => p.min);
@@ -369,7 +369,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 7: Weekday Heatmap (HTML) ──
 (function() {
-    const d = {"data": [{"x": 0, "y": 0, "v": 3}, {"x": 1, "y": 0, "v": 5}, {"x": 2, "y": 0, "v": 3}, {"x": 3, "y": 0, "v": 3}, {"x": 4, "y": 0, "v": 1}, {"x": 5, "y": 0, "v": 7}, {"x": 6, "y": 0, "v": 5}, {"x": 0, "y": 1, "v": 3}, {"x": 1, "y": 1, "v": 2}, {"x": 2, "y": 1, "v": 2}, {"x": 4, "y": 1, "v": 3}, {"x": 5, "y": 1, "v": 8}, {"x": 6, "y": 1, "v": 4}, {"x": 0, "y": 2, "v": 1}, {"x": 1, "y": 2, "v": 4}, {"x": 2, "y": 2, "v": 5}, {"x": 3, "y": 2, "v": 2}, {"x": 4, "y": 2, "v": 3}, {"x": 5, "y": 2, "v": 7}, {"x": 6, "y": 2, "v": 3}, {"x": 0, "y": 3, "v": 3}, {"x": 1, "y": 3, "v": 5}, {"x": 2, "y": 3, "v": 3}, {"x": 3, "y": 3, "v": 1}, {"x": 4, "y": 3, "v": 2}, {"x": 5, "y": 3, "v": 7}, {"x": 6, "y": 3, "v": 4}, {"x": 1, "y": 4, "v": 1}, {"x": 2, "y": 4, "v": 6}, {"x": 3, "y": 4, "v": 1}, {"x": 4, "y": 4, "v": 1}, {"x": 5, "y": 4, "v": 8}, {"x": 6, "y": 4, "v": 5}], "players": ["Bj\u00f8rn", "Nikolaj", "Nixon", "Jonas", "Gustav"], "days": ["Man", "Tir", "Ons", "Tor", "Fre", "L\u00f8r", "S\u00f8n"]};
+    const d = {"data": [{"x": 0, "y": 0, "v": 3}, {"x": 1, "y": 0, "v": 4}, {"x": 2, "y": 0, "v": 2}, {"x": 3, "y": 0, "v": 3}, {"x": 4, "y": 0, "v": 1}, {"x": 5, "y": 0, "v": 6}, {"x": 6, "y": 0, "v": 4}, {"x": 0, "y": 1, "v": 3}, {"x": 1, "y": 1, "v": 2}, {"x": 2, "y": 1, "v": 2}, {"x": 4, "y": 1, "v": 3}, {"x": 5, "y": 1, "v": 8}, {"x": 6, "y": 1, "v": 4}, {"x": 0, "y": 2, "v": 1}, {"x": 1, "y": 2, "v": 3}, {"x": 2, "y": 2, "v": 4}, {"x": 3, "y": 2, "v": 2}, {"x": 4, "y": 2, "v": 3}, {"x": 5, "y": 2, "v": 7}, {"x": 6, "y": 2, "v": 1}, {"x": 0, "y": 3, "v": 2}, {"x": 1, "y": 3, "v": 5}, {"x": 2, "y": 3, "v": 2}, {"x": 3, "y": 3, "v": 1}, {"x": 4, "y": 3, "v": 2}, {"x": 5, "y": 3, "v": 7}, {"x": 6, "y": 3, "v": 3}, {"x": 1, "y": 4, "v": 1}, {"x": 2, "y": 4, "v": 6}, {"x": 3, "y": 4, "v": 1}, {"x": 4, "y": 4, "v": 1}, {"x": 5, "y": 4, "v": 8}, {"x": 6, "y": 4, "v": 5}], "players": ["Bj\u00f8rn", "Nikolaj", "Nixon", "Jonas", "Gustav"], "days": ["Man", "Tir", "Ons", "Tor", "Fre", "L\u00f8r", "S\u00f8n"]};
     const maxVal = Math.max(...d.data.map(c => c.v));
     let html = '<div class="heatmap">';
     html += '<div></div>';
@@ -392,7 +392,7 @@ Chart.defaults.color = '#475569';
 
 // ── Chart 8: Best & Worst Weeks ──
 (function() {
-    const d = {"labels": ["Gustav (13/09)", "Bj\u00f8rn (03/11)", "Jonas (21/11)", "Jonas (29/04)", "Nikolaj (05/05)", "Nikolaj (25/08)", "Jonas (22/12)", "Nixon (16/09)", "Bj\u00f8rn (31/05)", "Bj\u00f8rn (22/04)"], "data": [-300.0, -300.0, -300.0, -182.0, -125.0, 590.0, 440.0, 375.0, 200.0, 159.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#9333ea", "#2563eb", "#2563eb", "#9333ea", "#16a34a", "#d97706", "#d97706"]};
+    const d = {"labels": ["Gustav (13/09)", "Bj\u00f8rn (03/11)", "Jonas (21/11)", "Jonas (29/04)", "Nikolaj (05/05)", "Nikolaj (25/08)", "Jonas (22/12)", "Nixon (16/09)", "Bj\u00f8rn (31/05)", "Nixon (17/08)"], "data": [-300.0, -300.0, -300.0, -182.0, -125.0, 590.0, 440.0, 375.0, 200.0, 159.0], "colors": ["#dc2626", "#d97706", "#9333ea", "#9333ea", "#2563eb", "#2563eb", "#9333ea", "#16a34a", "#d97706", "#16a34a"]};
     new Chart(document.getElementById('chartBigweeks'), {
         type: 'bar',
         data: {
