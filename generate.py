@@ -1362,14 +1362,11 @@ function updateProgress() {{
     document.getElementById('progressBar').style.width = pct + '%';
 }}
 
-// ── ICE config (STUN + TURN for cross-network WebRTC) ──
+// ── ICE config (STUN only — add TURN servers for cross-network support) ──
 const ICE_CONFIG = {{
     iceServers: [
         {{ urls: 'stun:stun.l.google.com:19302' }},
         {{ urls: 'stun:stun1.l.google.com:19302' }},
-        {{ urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }},
-        {{ urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
-        {{ urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }},
     ]
 }};
 
