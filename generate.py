@@ -865,14 +865,27 @@ def generate_quiz_html(quiz_json: str, chart_data: dict,
     date_to = df_bets["Dato"].max().strftime("%d/%m/%Y")
     n_players = df_bets["Spiller"].nunique()
 
-    # Build ICE servers list
+    # Build ICE servers list — Cloudflare TURN + Metered TURN fallback
+    ice_servers = [
+        {"urls": "stun:stun.l.google.com:19302"},
+        {"urls": "stun:stun1.l.google.com:19302"},
+    ]
     if turn_creds:
-        ice_servers = [turn_creds]
-    else:
-        ice_servers = [
-            {"urls": "stun:stun.l.google.com:19302"},
-            {"urls": "stun:stun1.l.google.com:19302"},
-        ]
+        ice_servers.append(turn_creds)
+    # Metered.ca static TURN fallback
+    metered_user = os.environ.get("METERED_TURN_USERNAME")
+    metered_pass = os.environ.get("METERED_TURN_CREDENTIAL")
+    if metered_user and metered_pass:
+        for url in [
+            "turn:standard.relay.metered.ca:80",
+            "turn:standard.relay.metered.ca:80?transport=tcp",
+            "turn:standard.relay.metered.ca:443",
+            "turns:standard.relay.metered.ca:443?transport=tcp",
+        ]:
+            ice_servers.append(
+                {"urls": url, "username": metered_user, "credential": metered_pass}
+            )
+        print("  Metered TURN servers added as fallback")
     ice_servers_json = json.dumps(ice_servers)
 
     # Quick stats for Q4 reveal
