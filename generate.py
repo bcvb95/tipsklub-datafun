@@ -11,11 +11,44 @@ Unit of analysis: WEEKS (players take turns betting each week).
 import csv
 import io
 import json
+import os
 import random
 import urllib.request
 from datetime import datetime
 
 import pandas as pd
+
+
+def fetch_turn_credentials() -> dict | None:
+    """Fetch short-lived TURN credentials from Cloudflare.
+
+    Reads CLOUDFLARE_TURN_TOKEN_ID and CLOUDFLARE_TURN_API_KEY from env vars.
+    Returns the iceServers dict or None if env vars are not set.
+    """
+    token_id = os.environ.get("CLOUDFLARE_TURN_TOKEN_ID")
+    api_key = os.environ.get("CLOUDFLARE_TURN_API_KEY")
+    if not token_id or not api_key:
+        return None
+
+    url = f"https://rtc.live.cloudflare.com/v1/turn/keys/{token_id}/credentials/generate"
+    data = json.dumps({"ttl": 86400}).encode()
+    req = urllib.request.Request(
+        url, data=data, method="POST",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "tipsklub-quiz/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+        print("  TURN credentials fetched from Cloudflare (24h TTL)")
+        return result["iceServers"]
+    except Exception as e:
+        print(f"  Warning: Failed to fetch TURN credentials: {e}")
+        return None
+
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
@@ -821,7 +854,8 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
 
 def generate_quiz_html(quiz_json: str, chart_data: dict,
                        stats: pd.DataFrame, weekly: pd.DataFrame,
-                       df_bets: pd.DataFrame) -> str:
+                       df_bets: pd.DataFrame,
+                       turn_creds: dict | None = None) -> str:
     """Build a standalone quiz HTML file with PeerJS for multiplayer."""
     total_weeks = len(weekly)
     total_bets = len(df_bets)
@@ -830,6 +864,16 @@ def generate_quiz_html(quiz_json: str, chart_data: dict,
     date_from = df_bets["Dato"].min().strftime("%d/%m/%Y")
     date_to = df_bets["Dato"].max().strftime("%d/%m/%Y")
     n_players = df_bets["Spiller"].nunique()
+
+    # Build ICE servers list
+    if turn_creds:
+        ice_servers = [turn_creds]
+    else:
+        ice_servers = [
+            {"urls": "stun:stun.l.google.com:19302"},
+            {"urls": "stun:stun1.l.google.com:19302"},
+        ]
+    ice_servers_json = json.dumps(ice_servers)
 
     # Quick stats for Q4 reveal
     quick_stats_json = json.dumps({
@@ -1362,13 +1406,8 @@ function updateProgress() {{
     document.getElementById('progressBar').style.width = pct + '%';
 }}
 
-// ── ICE config (STUN only — add TURN servers for cross-network support) ──
-const ICE_CONFIG = {{
-    iceServers: [
-        {{ urls: 'stun:stun.l.google.com:19302' }},
-        {{ urls: 'stun:stun1.l.google.com:19302' }},
-    ]
-}};
+// ── ICE config (STUN + Cloudflare TURN) ──
+const ICE_CONFIG = {{iceServers: {ice_servers_json}}};
 
 // ── HOST ──
 function startHost() {{
@@ -2668,8 +2707,9 @@ def main():
     print(f"  Dashboard: {output_path} ({len(html) / 1024:.0f} KB)")
 
     print("Generating quiz...")
+    turn_creds = fetch_turn_credentials()
     quiz_json = generate_quiz_questions(stats, weekly, df_bets, chart_data)
-    quiz_html = generate_quiz_html(quiz_json, chart_data, stats, weekly, df_bets)
+    quiz_html = generate_quiz_html(quiz_json, chart_data, stats, weekly, df_bets, turn_creds)
 
     quiz_path = "tipsklub_quiz.html"
     with open(quiz_path, "w", encoding="utf-8") as f:
