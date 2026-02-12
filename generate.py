@@ -73,7 +73,7 @@ def fetch_data() -> pd.DataFrame:
     if "Dato" in df.columns:
         df["Dato"] = pd.to_datetime(df["Dato"], format="%d/%m/%Y", errors="coerce")
 
-    df = df[df["Dato"] >= "2025-04-14"].copy()
+    df = df[(df["Dato"] >= "2025-04-29") & (df["Dato"] <= "2026-01-25")].copy()
     df = df.sort_values("Dato").reset_index(drop=True)
 
     print(f"  2025 rows: {len(df)}")
@@ -629,7 +629,9 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     correct_str = f'{profitable_weeks} af {total_weeks}'
     wrong_options = []
     for offset in [-6, 4, -11]:
-        w = profitable_weeks + offset
+        w = max(0, min(profitable_weeks + offset, total_weeks))
+        if w == profitable_weeks:
+            w = max(0, profitable_weeks + offset + 1)
         wrong_options.append(f'{w} af {total_weeks}')
     opts, ci = make_options(correct_str, wrong_options)
     # Monthly breakdown: profitable weeks per month
@@ -674,7 +676,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": worst_weeks_ranked,
     })
 
-    # ── Q8: MOST HIGH-ODDS BETS (spaced from Q3 odds junkie) ──
+    # ── Q9: MOST HIGH-ODDS BETS (spaced from Q3 odds junkie) ──
     high_odds_counts = {}
     for p in PLAYER_ORDER:
         high_odds_counts[p] = int(len(df_bets[(df_bets["Spiller"] == p) & (df_bets["Odds"] >= 3)]))
@@ -693,7 +695,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": ho_ranking,
     })
 
-    # ── Q9: THE BOTTOM ──
+    # ── Q10: THE BOTTOM ──
     worst = profit_ranked.iloc[-1]
     opts, ci = make_options(
         worst["Spiller"],
@@ -710,7 +712,7 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
         "ranking": loss_ranking,
     })
 
-    # ── Q10: WIN RATE ──
+    # ── Q11: WIN RATE ──
     wr_ranked = stats.sort_values("Win Rate", ascending=False)
     wr_best = wr_ranked.iloc[0]
     opts, ci = make_options(
@@ -784,8 +786,9 @@ def generate_quiz_questions(stats: pd.DataFrame, weekly: pd.DataFrame,
     club_profit = stats["Total Profit"].sum()
     correct_str = f'{club_profit:+,.0f} kr'
     wrong_amounts = []
-    for offset in [350, -400, -150]:
-        wrong_amounts.append(f'{club_profit + offset:+,.0f} kr')
+    base = max(abs(club_profit), 500)
+    for frac in [0.25, -0.35, -0.15]:
+        wrong_amounts.append(f'{club_profit + base * frac:+,.0f} kr')
     opts, ci = make_options(correct_str, wrong_amounts)
     # Show monthly breakdown — avoids leaking per-player profit before Q15
     month_totals_q14 = weekly.groupby("Month")["Profit"].sum()
@@ -1359,11 +1362,14 @@ function updateProgress() {{
     document.getElementById('progressBar').style.width = pct + '%';
 }}
 
-// ── ICE config (STUN for same-network WebRTC) ──
+// ── ICE config (STUN + TURN for cross-network WebRTC) ──
 const ICE_CONFIG = {{
     iceServers: [
         {{ urls: 'stun:stun.l.google.com:19302' }},
         {{ urls: 'stun:stun1.l.google.com:19302' }},
+        {{ urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }},
+        {{ urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }},
+        {{ urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }},
     ]
 }};
 
